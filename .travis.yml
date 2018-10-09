@@ -120,7 +120,7 @@ script:
     - python2 -m girder_worker >/tmp/worker.out 2>&1 &
     - cd $build_path/girder_testing_build
     - cmake -DPYTHON_VERSION:STRING=${TRAVIS_PYTHON_VERSION} -DRUN_CORE_TESTS:BOOL="OFF" -DTEST_PLUGINS:STRING="larger_image" $girder_path
-    - make # -j 5
+    - make -j 5
     - JASMINE_TIMEOUT=15000 ctest -VV -j 3
     # - travis-sphinx build --source=$main_path/docs
 
