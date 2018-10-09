@@ -1,0 +1,134 @@
+language: python
+python:
+    - "2.7"
+
+cache:
+    directories:
+        - $HOME/.cache
+
+sudo: required
+
+dist: trusty
+
+services:
+    - rabbitmq
+
+compiler:
+    - gcc
+
+addons:
+    apt:
+        packages:
+            # Pillow dependencies (see
+            # https://pillow.readthedocs.org/en/latest/installation.html)
+            - libtiff5-dev
+            - libjpeg8-dev
+            - zlib1g-dev
+            - libfreetype6-dev
+            - liblcms2-dev
+            - libwebp-dev
+            - tcl8.6-dev
+            - tk8.6-dev
+            - python-tk
+            # vips
+            - libvips-tools
+            # openjpeg
+            - libglib2.0-dev
+            - libjpeg-dev
+            - libxml2-dev
+            - libpng12-dev
+            # openslide
+            - autoconf
+            - automake
+            - libtool
+            - pkg-config
+            - libcairo2-dev
+            - libgdk-pixbuf2.0-dev
+            - libxml2-dev
+            - libsqlite3-dev
+            # girder worker - not needed; included in travis
+            # - rabbitmq-server
+
+before_install:
+    # Fix a travis/boto issue.  See
+    # https://github.com/travis-ci/travis-ci/issues/7940
+    - sudo rm -f /etc/boto.cfg
+
+    - mkdir -p $HOME/.cache/node_modules || true
+    - ln -sf $HOME/.cache/node_modules .
+    - nvm install v8
+    - npm install -g npm
+    - npm install -g npm-install-retry
+    - npm --version
+    - npm prune
+
+    - CACHE="$HOME/.cache" OPENJPEG_VERSION=2.1.2 OPENJPEG_FILE=v2.1.2.tar.gz OPENJPEG_DIR=openjpeg-2.1.2 LIBTIFF_VERSION=4.0.8 OPENSLIDE_VERSION=3.4.1 source .install-openslide.sh
+
+    - GIRDER_VERSION=2.x-maintenance
+    - GIRDER_WORKER_VERSION=master
+    - LARGE_IMAGE_VERSION=master
+    - main_path=$PWD
+    - build_path=$PWD/build
+    - mkdir -p $build_path
+
+    - girder_path=$build_path/girder
+    - rm -fr $girder_path
+    - git clone https://github.com/girder/girder.git $girder_path && git -C $girder_path checkout $GIRDER_VERSION
+    - ln -sf $main_path $girder_path/plugins/
+    - ls -l $girder_path/plugins
+
+    - girder_worker_path=$girder_path/plugins/girder_worker
+    - git clone https://github.com/girder/girder_worker.git $girder_worker_path && git -C $girder_worker_path checkout $GIRDER_WORKER_VERSION
+    - cp $PWD/plugin_tests/girder_worker.cfg $girder_worker_path/girder_worker/worker.local.cfg
+    - pip install --no-cache-dir -U --upgrade-strategy eager $girder_worker_path'[girder_io]'
+
+    - large_image_path=$girder_path/plugins/large_image
+    - git clone https://github.com/girder/large_image.git $large_image_path && git -C $large_image_path checkout $LARGE_IMAGE_VERSION
+
+    - export MONGO_VERSION=3.2.18
+    - export PY_COVG="ON"
+    - CACHE=$HOME/.cache source $girder_path/scripts/install_mongo.sh
+    - mkdir /tmp/db
+    - mongod --dbpath=/tmp/db >/dev/null 2>/dev/null &
+    - mongod --version
+
+    - CACHE=$HOME/.cache CMAKE_VERSION=3.8.0 CMAKE_SHORT_VERSION=3.8 source $girder_path/scripts/install_cmake.sh
+    - cmake --version
+
+install:
+    - cd $girder_path
+    - pip install -U --upgrade-strategy eager -r requirements-dev.txt
+    - pip install -U --upgrade-strategy eager -e .[worker]
+    - cd $large_image_path
+    - pip install --no-cache-dir numpy>=1.12.1
+    - pip install --upgrade --no-cache-dir --force-reinstall --ignore-installed openslide-python Pillow
+
+    - pip install -U --upgrade-strategy eager .[memcached,openslide]
+    - python setup.py install
+    - cd $main_path
+    - pip install -r requirements.txt
+    # - pip install -e .
+    - cd $girder_path
+    - npm-install-retry
+    - BABEL_ENV=cover NYC_CWD="$main_path" girder-install web --plugins=jobs,worker,large_image,larger_image --dev
+    # - pip install jupyter sphinx sphinx_rtd_theme nbsphinx travis-sphinx
+    - pip freeze  # report what we have installed
+
+script:
+    - mkdir -p $build_path/girder_testing_build
+    - cd $girder_worker_path
+    - python2 -m girder_worker >/tmp/worker.out 2>&1 &
+    - cd $build_path/girder_testing_build
+    - cmake -DPYTHON_VERSION:STRING=${TRAVIS_PYTHON_VERSION} -DRUN_CORE_TESTS:BOOL="OFF" -DTEST_PLUGINS:STRING="larger_image" $girder_path
+    - make -j 5
+    - JASMINE_TIMEOUT=15000 ctest -VV -j 3
+    # - travis-sphinx build --source=$main_path/docs
+
+after_failure:
+    # On failures, show the worker output and other information
+    - pip freeze
+    - cat /tmp/worker.out
+
+after_success:
+    - bash <(curl -s https://codecov.io/bash) -R $main_path -s $girder_path
+    # - travis-sphinx deploy
