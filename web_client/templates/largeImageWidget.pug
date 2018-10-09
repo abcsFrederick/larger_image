@@ -1,0 +1,23 @@
+.modal-dialog
+  .modal-content
+    form#l-large-image-form.modal-form(role="form")
+      .modal-header
+        button.close(data-dismiss="modal", aria-hidden="true", type="button") &times;
+        h4.modal-title Create Large Image
+      .modal-body
+        .form-group
+          label#l-notify-label.control-label(for="l-notify") Notify
+          input#l-notify(type='checkbox', checked=notify)
+        .form-group
+          label.control-label(for="l-compression") Compression
+          select#l-compression.form-control.disabled(type="text")
+        .form-group
+          label#l-quality-label.control-label(for="l-quality") Quality
+          input#l-quality(
+            type="range", min="0", max="100", step="1", value=quality)
+        .l-validation-failed-message
+      .modal-footer
+        a.btn.btn-small.btn-default(data-dismiss="modal") Cancel
+        button.l-large-image.btn.btn-small.btn-primary.disabled(type="submit")
+          i.icon-picture
+          | Create
