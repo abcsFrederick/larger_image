@@ -34,7 +34,28 @@ $(function () {
                 girderTest.binaryUpload('plugins/large_image/plugin_tests/test_files/grey10kx5k.tif');
             });
             girderTest.waitForLoad();
-            // TODO
+        });
+        it('navigate to item and make a large image', function () {
+            runs(function () {
+                $('a.g-item-list-link').click();
+            });
+            girderTest.waitForLoad();
+            waitsFor(function () {
+                return $('.g-large-image-create').length !== 0;
+            });
+            runs(function () {
+                $('.g-large-image-create').click();
+            });
+            girderTest.waitForLoad();
+            runs(function () {
+                $('.l-large-image').click();
+            });
+            girderTest.waitForLoad();
+            // wait for job to complete
+            waitsFor(function () {
+                return $('.g-item-image-viewer-select').length !== 0;
+            }, 15000);
+            girderTest.waitForLoad();
         });
     });
 });
