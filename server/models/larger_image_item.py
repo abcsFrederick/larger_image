@@ -25,10 +25,11 @@ import os.path
 import time
 
 from girder.plugins.jobs.models.job import Job
-from girder.plugins.large_image.tilesource import AvailableTileSources
 from girder.plugins.large_image.models.base import TileGeneralException
 from girder.plugins.large_image.models.image_item import ImageItem
 from girder.plugins.worker import utils as workerUtils
+
+from ..tilesource import AvailableTileSources, TileSourceException
 
 
 class LargerImageItem(ImageItem):
@@ -177,3 +178,16 @@ class LargerImageItem(ImageItem):
         Job().scheduleJob(job)
 
         return job
+
+    @classmethod
+    def _loadTileSource(cls, item, **kwargs):
+        if 'largeImage' not in item:
+            raise TileSourceException('No large image file in this item.')
+        if item['largeImage'].get('expected'):
+            raise TileSourceException('The large image file for this item is '
+                                      'still pending creation.')
+
+        sourceName = item['largeImage']['sourceName']
+
+        tileSource = AvailableTileSources[sourceName](item, **kwargs)
+        return tileSource

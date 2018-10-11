@@ -22,7 +22,7 @@
 #  limitations under the License.
 ###############################################################################
 
-from girder.api import access
+from girder.api import access, filter_logging
 from girder.api.v1.item import Item as ItemResource
 from girder.api.describe import describeRoute, Description
 from girder.api.rest import filtermodel, loadmodel
@@ -31,20 +31,25 @@ from girder.models.model_base import AccessType
 from girder.models.file import File
 
 from girder.plugins.large_image.models import TileGeneralException
-from girder.plugins.large_image.rest.tiles import ImageMimeTypes
+from girder.plugins.large_image.rest.tiles import ImageMimeTypes, TilesItemResource
 
 from ..models.larger_image_item import LargerImageItem
 
 
-class TilesItemResource(ItemResource):
+class TilesItemResource(TilesItemResource):
     def __init__(self, apiRoot):
         # Avoid redefining routes, call the Resource constructor
         super(ItemResource, self).__init__()
 
         apiRoot.item.route('POST', (':itemId', 'tiles', 'extended'),
                            self.createTiles)
+        apiRoot.item.route('GET', (':itemId', 'tiles', 'extended', 'zxy', ':z', ':x', ':y'),
+                           self.getTile)
+        filter_logging.addLoggingFilter(
+            'GET (/[^/ ?#]+)*/item/[^/ ?#]+/tiles/zxy(/[^/ ?#]+){3}',
+            frequency=250)
         # Cache the model singleton
-        self.largerImageItemModel = LargerImageItem()
+        self.imageItemModel = LargerImageItem()
 
     @describeRoute(
         Description('Create a large image for this item.')
@@ -79,7 +84,7 @@ class TilesItemResource(ItemResource):
         user = self.getCurrentUser()
         token = self.getCurrentToken()
         try:
-            return self.largerImageItemModel.createImageItem(
+            return self.imageItemModel.createImageItem(
                 item, largeImageFile, user, token,
                 notify=self.boolParam('notify', params, default=True),
                 quality=params.get('quality', 90),

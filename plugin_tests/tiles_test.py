@@ -92,7 +92,8 @@ class LargeImageTilesTest(common.LargeImageCommonTest):
         # If we ask to create the item again right away, we should be told that
         # either there is already a job running or the item has already been
         # added
-        req = requests.post(url, headers=headers, data={'fileId': fileId})
+        req = requests.post(url, headers=headers, data={'fileId': fileId,
+                                                        'compression': 'none'})
         self.assertEqual(req.status_code, 400)
         self.assertTrue('Item already has' in req.json()['message'] or
                         'Item is scheduled' in req.json()['message'])
