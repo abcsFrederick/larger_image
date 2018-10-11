@@ -87,7 +87,8 @@ class LargeImageTilesTest(common.LargeImageCommonTest):
         headers = [('Accept', 'application/json')]
         self._buildHeaders(headers, None, self.admin, None, None, None)
         headers = {header[0]: header[1] for header in headers}
-        req = requests.post(url, headers=headers, data={'fileId': fileId})
+        req = requests.post(url, headers=headers, data={'fileId': fileId,
+                                                        'compression': 'none'})
         self.assertEqual(req.status_code, 200)
         # If we ask to create the item again right away, we should be told that
         # either there is already a job running or the item has already been
