@@ -31,7 +31,7 @@ $(function () {
             });
             girderTest.waitForLoad();
             runs(function () {
-                girderTest.binaryUpload('plugins/large_image/plugin_tests/test_files/grey10kx5k.tif');
+                girderTest.binaryUpload('plugins/larger_image/plugin_tests/test_files/grey10kx5kdeflate.tif');
             });
             girderTest.waitForLoad();
         });

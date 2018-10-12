@@ -23,7 +23,7 @@ var LargeImageWidget = View.extend({
 
             restRequest({
                 type: 'POST',
-                url: 'item/' + this.item.id + '/tiles',
+                url: 'item/' + this.item.id + '/tiles/extended',
                 data: data,
                 error: function (error) {
                     if (error.status !== 0) {
@@ -66,7 +66,7 @@ var LargeImageWidget = View.extend({
 
     // FIXME: where does girder implement this?
     _setApiDefaults: function (description) {
-        var parameters = description.paths['/item/{itemId}/tiles'].post.parameters;
+        var parameters = description.paths['/item/{itemId}/tiles/extended'].post.parameters;
         parameters.forEach((parameter) => {
             switch (parameter.name) {
                 case 'notify':

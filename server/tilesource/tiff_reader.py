@@ -15,10 +15,14 @@ except ImportError:
 
 class TiledTiffDirectory(tiff_reader.TiledTiffDirectory):
     def _validate(self):
+        validateExceptions = (
+            'Only JPEG compression TIFF files are supported',
+            'Only RGB and greyscale TIFF files are supported'
+        )
         try:
             return super(TiledTiffDirectory, self)._validate()
         except tiff_reader.ValidationTiffException as e:
-            if e.message != 'Only JPEG compression TIFF files are supported':
+            if e.message not in validateExceptions:
                 raise
 
         if (not self._tiffInfo.get('istiled') or

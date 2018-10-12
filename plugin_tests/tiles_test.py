@@ -49,9 +49,8 @@ def tearDownModule():
 
 class LargeImageTilesTest(common.LargeImageCommonTest):
     def testTilesFromGreyscale(self):
-        file = self._uploadFile(os.path.join('plugins', 'large_image',
-                                             'plugin_tests', 'test_files',
-                                             'grey10kx5k.tif'))
+        file = self._uploadFile(os.path.join(
+            os.path.dirname(__file__), 'test_files', 'grey10kx5kdeflate.tif'))
         itemId = str(file['itemId'])
         fileId = str(file['_id'])
         # FIXME: route
