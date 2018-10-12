@@ -5,7 +5,7 @@ girderTest.importPlugin('larger_image');
 girderTest.startApp();
 
 $(function () {
-    describe('Test the larger_iamge plugin', function () {
+    describe('Test the larger_image plugin', function () {
         it('create the admin user', function () {
             girderTest.createUser(
                 'admin', 'admin@email.com', 'Admin', 'Admin', 'testpassword')();
