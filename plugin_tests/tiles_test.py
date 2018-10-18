@@ -25,7 +25,11 @@
 import os
 import time
 
+from six import BytesIO
+
 import requests
+
+import PIL.Image
 
 from tests import base
 
@@ -33,6 +37,7 @@ from girder import config
 from girder.constants import SortDir
 
 import common
+
 
 os.environ['GIRDER_PORT'] = os.environ.get('GIRDER_TEST_PORT', '20200')
 config.loadConfig()
@@ -48,22 +53,35 @@ def tearDownModule():
 
 
 class LargeImageTilesTest(common.LargeImageCommonTest):
-    def testTilesFromGreyscale(self):
+    def testTile(self):
         file = self._uploadFile(os.path.join(
             os.path.dirname(__file__), 'test_files', 'grey10kx5kdeflate.tif'))
         itemId = str(file['itemId'])
         fileId = str(file['_id'])
-        # FIXME: route
         tileMetadata = self._postTileViaHttp(itemId, fileId)
         self.assertEqual(tileMetadata['tileWidth'], 256)
         self.assertEqual(tileMetadata['tileHeight'], 256)
-        self.assertEqual(tileMetadata['sizeX'], 10000)
-        self.assertEqual(tileMetadata['sizeY'], 5000)
         self.assertEqual(tileMetadata['levels'], 7)
-        self.assertEqual(tileMetadata['magnification'], None)
-        self.assertEqual(tileMetadata['mm_x'], None)
-        self.assertEqual(tileMetadata['mm_y'], None)
-        self._testTilesZXY(itemId, tileMetadata)
+        resp = self.request(path='/item/%s/tiles/extended/zxy/0/0/0' % itemId,
+                            isJson=False, user=self.admin)
+        self.assertStatusOk(resp)
+        tile = self.getBody(resp, text=False)
+        image = PIL.Image.open(BytesIO(tile))
+        self.assertEqual(image.format, 'JPEG')
+        self.assertEqual(image.mode, 'L')
+
+    def testLabelTile(self):
+        file = self._uploadFile(os.path.join(
+            os.path.dirname(__file__), 'test_files', 'grey10kx5kdeflate.tif'))
+        itemId = str(file['itemId'])
+        fileId = str(file['_id'])
+        self._postTileViaHttp(itemId, fileId)
+        resp = self.request(path='/item/%s/tiles/extended/zxy/0/0/0' % itemId,
+                            params={'label': 1}, isJson=False, user=self.admin)
+        tile = self.getBody(resp, text=False)
+        image = PIL.Image.open(BytesIO(tile))
+        self.assertEqual(image.format, 'PNG')
+        self.assertEqual(image.mode, 'RGBA')
 
     def _postTileViaHttp(self, itemId, fileId, jobAction=None):
         """

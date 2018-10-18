@@ -191,3 +191,10 @@ class LargerImageItem(ImageItem):
 
         tileSource = AvailableTileSources[sourceName](item, **kwargs)
         return tileSource
+
+    def getTile(self, item, x, y, z, mayRedirect=False, **kwargs):
+        tileSource = self._loadTileSource(item, **kwargs)
+        tileData = tileSource.getTile(x, y, z, mayRedirect=mayRedirect,
+                                      **kwargs)
+        tileMimeType = tileSource.getTileMimeType()
+        return tileData, tileMimeType

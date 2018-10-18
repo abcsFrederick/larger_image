@@ -24,48 +24,56 @@
 import os
 import subprocess
 
-# Define Girder Worker globals for the style checker
-_tempdir = _tempdir   # noqa
-in_path = in_path   # noqa
-compression = compression   # noqa
-quality = quality   # noqa
-tile_size = tile_size   # noqa
-out_filename = out_filename  # noqa
 
-out_path = os.path.join(_tempdir, out_filename)
+def create_tiff(in_path, compression, quality, tile_size, out_path):
+    convert_command = (
+        'vips',
+        # Additional vips options can be added to aid debugging.  For instance,
+        #   '--vips-concurrency', '1',
+        #   '--vips-progress',
+        # can show how vips is processing a file.
+        'tiffsave',
+        in_path,
+        out_path,
+        '--compression', compression,
+        '--Q', str(quality),
+        '--tile',
+        '--tile-width', str(tile_size),
+        '--tile-height', str(tile_size),
+        '--pyramid',
+        '--bigtiff'
+    )
 
-convert_command = (
-    'vips',
-    # Additional vips options can be added to aid debugging.  For instance,
-    #   '--vips-concurrency', '1',
-    #   '--vips-progress',
-    # can show how vips is processing a file.
-    'tiffsave',
-    in_path,
-    out_path,
-    '--compression', compression,
-    '--Q', str(quality),
-    '--tile',
-    '--tile-width', str(tile_size),
-    '--tile-height', str(tile_size),
-    '--pyramid',
-    '--bigtiff'
-)
+    try:
+        import six.moves
+        print('Command: %s' % (
+            ' '.join([six.moves.shlex_quote(arg) for arg in convert_command])))
+    except ImportError:
+        pass
+    proc = subprocess.Popen(convert_command, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    out, err = proc.communicate()
+
+    if out.strip():
+        print('stdout: ' + out)
+    if err.strip():
+        print('stderr: ' + err)
+    if proc.returncode:
+        raise Exception('VIPS command failed (rc=%d): %s' % (
+            proc.returncode, ' '.join(convert_command)))
+
 
 try:
-    import six.moves
-    print('Command: %s' % (
-        ' '.join([six.moves.shlex_quote(arg) for arg in convert_command])))
-except ImportError:
-    pass
-proc = subprocess.Popen(convert_command, stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE)
-out, err = proc.communicate()
+    # Define Girder Worker globals for the style checker
+    _tempdir = _tempdir   # noqa
+    in_path = in_path   # noqa
+    compression = compression   # noqa
+    quality = quality   # noqa
+    tile_size = tile_size   # noqa
+    out_filename = out_filename  # noqa
 
-if out.strip():
-    print('stdout: ' + out)
-if err.strip():
-    print('stderr: ' + err)
-if proc.returncode:
-    raise Exception('VIPS command failed (rc=%d): %s' % (
-        proc.returncode, ' '.join(convert_command)))
+    out_path = os.path.join(_tempdir, out_filename)
+
+    create_tiff(in_path, compression, quality, tile_size, out_path)
+except NameError:
+    pass

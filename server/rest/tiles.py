@@ -22,16 +22,20 @@
 #  limitations under the License.
 ###############################################################################
 
+import cherrypy
+
 from girder.api import access, filter_logging
 from girder.api.v1.item import Item as ItemResource
 from girder.api.describe import describeRoute, Description
-from girder.api.rest import filtermodel, loadmodel
+from girder.api.rest import filtermodel, loadmodel, setResponseHeader
 from girder.exceptions import RestException
 from girder.models.model_base import AccessType
 from girder.models.file import File
 
+from girder.plugins.large_image import loadmodelcache
 from girder.plugins.large_image.models import TileGeneralException
-from girder.plugins.large_image.rest.tiles import ImageMimeTypes, TilesItemResource
+from girder.plugins.large_image.rest.tiles import ImageMimeTypes, \
+    TilesItemResource, _adjustParams
 
 from ..models.larger_image_item import LargerImageItem
 
@@ -91,3 +95,78 @@ class TilesItemResource(TilesItemResource):
                 compression=params.get('compression', 'jpeg').lower())
         except TileGeneralException as e:
             raise RestException(e.args[0])
+
+    @describeRoute(
+        Description('Get a large image tile.')
+        .param('itemId', 'The ID of the item.', paramType='path')
+        .param('z', 'The layer number of the tile (0 is the most zoomed-out '
+               'layer).', paramType='path')
+        .param('x', 'The X coordinate of the tile (0 is the left side).',
+               paramType='path')
+        .param('y', 'The Y coordinate of the tile (0 is the top).',
+               paramType='path')
+        .param('redirect', 'If the tile exists as a complete file, allow an '
+               'HTTP redirect instead of returning the data directly.  The '
+               'redirect might not have the correct mime type.  "exact" must '
+               'match the image encoding and quality parameters, "encoding" '
+               'must match the image encoding but disregards quality, and '
+               '"any" will redirect to any image if possible.', required=False,
+               enum=['false', 'exact', 'encoding', 'any'], default='false')
+        .param('normalize', 'Normalize image intensity (single band only).',
+               required=False, dataType='boolean', default=False)
+        .param('normalizeMin', 'Minimum threshold intensity.',
+               required=False, dataType='float')
+        .param('normalizeMin', 'Maximum threshold intensity.',
+               required=False, dataType='float')
+        .param('label', 'Return a label image (single band only).',
+               required=False, dataType='boolean', default=False)
+        .param('invertLabel', 'Invert label values for transparency.',
+               required=False, dataType='boolean', default=True)
+        .param('flattenLabel', 'Ignore values for transparency.',
+               required=False, dataType='boolean', default=False)
+        .param('exclude', 'Label values to exclude.', required=False)
+        .param('bitmask', 'Label values are bitmasks.',
+               required=False, dataType='boolean', default=False)
+        .param('colormapId', 'ID of colormap to apply to image.',
+               required=False)
+        .produces(ImageMimeTypes)
+        .errorResponse('ID was invalid.')
+        .errorResponse('Read access was denied for the item.', 403)
+        .errorResponse('Invalid colormap on server.', 500)
+    )
+    # Without caching, this checks for permissions every time.  By using the
+    # LoadModelCache, three database lookups are avoided, which saves around
+    # 6 ms in tests.
+    #   @access.cookie   # access.cookie always looks up the token
+    #   @access.public
+    #   @loadmodel(model='item', map={'itemId': 'item'}, level=AccessType.READ)
+    #   def getTile(self, item, z, x, y, params):
+    #       return self._getTile(item, z, x, y, params, True)
+    @access.cookie   # access.cookie always looks up the token
+    @access.public
+    def getTile(self, itemId, z, x, y, params):
+        _adjustParams(params)
+        item = loadmodelcache.loadModel(
+            self, 'item', id=itemId, allowCookie=True, level=AccessType.READ)
+        # Explicitly set a expires time to encourage browsers to cache this for
+        # a while.
+        setResponseHeader('Expires', cherrypy.lib.httputil.HTTPDate(
+            cherrypy.serving.response.time + 600))
+        redirect = params.get('redirect', False)
+        if redirect not in ('any', 'exact', 'encoding'):
+            redirect = False
+        typeList = [
+            ('normalize', bool),
+            ('normalizeMin', float),
+            ('normalizeMax', float),
+            ('label', bool),
+            ('invertLabel', bool),
+            ('flattenLabel', bool),
+            ('bitmask', bool),
+        ]
+        params = self._parseParams(params, True, typeList)
+        if 'exclude' in params:
+            # TODO: error handling
+            params['exclude'] = [int(s) for s in params['exclude'].split(',')]
+        # TODO: colormap
+        return self._getTile(item, z, x, y, params, mayRedirect=redirect)
