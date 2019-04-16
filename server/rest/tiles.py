@@ -125,8 +125,10 @@ class TilesItemResource(TilesItemResource):
         .param('flattenLabel', 'Ignore values for transparency.',
                required=False, dataType='boolean', default=False)
         .param('exclude', 'Label values to exclude.', required=False)
-        .param('bitmask', 'Label values are bitmasks.',
+        .param('oneHot', 'Label values are one-hot encoded.',
                required=False, dataType='boolean', default=False)
+        .param('bit', 'One-hot encoded bit.',
+               required=False, dataType='int')
         .param('colormapId', 'ID of colormap to apply to image.',
                required=False)
         .produces(ImageMimeTypes)
@@ -162,7 +164,8 @@ class TilesItemResource(TilesItemResource):
             ('label', bool),
             ('invertLabel', bool),
             ('flattenLabel', bool),
-            ('bitmask', bool),
+            ('oneHot', bool),
+            ('bit', int),
         ]
         params = self._parseParams(params, True, typeList)
         if 'exclude' in params:

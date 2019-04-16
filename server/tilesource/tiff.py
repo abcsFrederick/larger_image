@@ -20,21 +20,41 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
     cacheName = 'tilesource'
     name = 'tifffile'
 
+    def _bit(self, tile, tileEncoding, channel, colormap=None):
+        if tileEncoding != TILE_FORMAT_PIL:
+            tile = PIL.Image.open(BytesIO(tile))
+            tileEncoding = TILE_FORMAT_PIL
+        if tile.mode != 'L':
+            raise NotImplementedError('8-bit oneHot images only')
+        if channel:
+            mask = numpy.asarray(tile) >> (channel - 1) & 1
+            mask *= 255
+        else:
+            mask = numpy.zeros((tile.size[1], tile.size[0]), numpy.uint8)
+            mask[numpy.asarray(tile) == 0] = 255
+        if colormap is None:
+            color = None
+        else:
+            color = 'rgb' + str(tuple(colormap[int(round(channel*255/8.0))]))
+        tile = PIL.Image.new('RGBA', tile.size, color)
+        tile.putalpha(PIL.Image.fromarray(mask))
+        return tile, tileEncoding
+
     def _normalizeImage(self, tile, tileEncoding, range_, exclude=None,
-                        bitmask=False):
+                        oneHot=False):
         if tileEncoding != TILE_FORMAT_PIL:
             tile = PIL.Image.open(BytesIO(tile))
             tileEncoding = TILE_FORMAT_PIL
         if len(tile.getbands()) > 1:
             raise NotImplementedError('single band label images only')
-        if bitmask:
+        if oneHot:
             if tile.mode != 'L':
-                raise NotImplementedError('8-bit bitmask images only')
+                raise NotImplementedError('8-bit oneHot images only')
             mask = numpy.asarray(tile)
             array = numpy.zeros(mask.shape, dtype=numpy.uint8)
             min_, max_ = max(1, int(range_[0])), min(8, int(range_[1]))
             for i in range(min_, max_ + 1):
-                if bitmask and exclude and i in exclude:
+                if oneHot and exclude and i in exclude:
                     continue
                 value = int(i*255/8)
                 array[numpy.nonzero(mask & 1 << i - 1)] = value
@@ -95,14 +115,28 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
 
     def _outputTile(self, tile, tileEncoding, *args, **kwargs):
         encoding = self.encoding
-        if 'normalize' in kwargs and kwargs['normalize']:
-            min_, max_ = kwargs.get('normalizeMin'), kwargs.get('normalizeMax')
+
+        bit = kwargs.get('bit')
+        if bit is not None:
+            tile, tileEncoding = self._bit(tile, tileEncoding, bit,
+                                           kwargs.get('colormap'))
+            self.encoding = 'PNG'
+            result = super(TiffFileTileSource, self)._outputTile(tile,
+                                                                 tileEncoding,
+                                                                 *args,
+                                                                 **kwargs)
+            self.encoding = encoding
+            return result
+
+        oneHot = kwargs.get('oneHot', False)
+        if 'normalize' in kwargs and kwargs['normalize'] or oneHot:
+            min_ = kwargs.get('normalizeMin', 0)
+            max_ = kwargs.get('normalizeMax', 255)
             exclude = kwargs.get('exclude')
-            bitmask = kwargs.get('bitmask', False)
             tile, tileEncoding = self._normalizeImage(tile, tileEncoding,
                                                       range_=(min_, max_),
                                                       exclude=exclude,
-                                                      bitmask=bitmask)
+                                                      oneHot=oneHot)
 
         label = kwargs.get('label', False)
         if 'colormap' in kwargs and kwargs['colormap']:
