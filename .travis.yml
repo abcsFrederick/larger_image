@@ -67,6 +67,7 @@ before_install:
     - GIRDER_VERSION=2.x-maintenance
     - GIRDER_WORKER_VERSION=v0.5.1
     - LARGE_IMAGE_VERSION=master
+    - SLICER_CLI_WEB_VERSION=master
     - COLORMAPS_VERSION=master
     - main_path=$PWD
     - build_path=$PWD/build
@@ -85,6 +86,9 @@ before_install:
 
     - large_image_path=$girder_path/plugins/large_image
     - git clone https://github.com/girder/large_image.git $large_image_path && git -C $large_image_path checkout $LARGE_IMAGE_VERSION
+
+    - slicer_cli_web_path=$girder_path/plugins/slicer_cli_web
+    - git clone https://github.com/girder/slicer_cli_web.git $slicer_cli_web_path && git -C $slicer_cli_web_path checkout $SLICER_CLI_WEB_VERSION
 
     - colormaps_path=$girder_path/plugins/colormaps
     - git clone https://github.com/cj-abcs/colormaps.git $colormaps_path && git -C $colormaps_path checkout $COLORMAPS_VERSION
@@ -113,8 +117,9 @@ install:
     # - pip install -r requirements.txt
     # - pip install -e .
     - cd $girder_path
+    - pip install -U --upgrade-strategy eager -r $slicer_cli_web_path/requirements.txt
     - npm-install-retry
-    - BABEL_ENV=cover NYC_CWD="$main_path" girder-install web --plugins=jobs,worker,large_image,colormaps,larger_image --dev
+    - BABEL_ENV=cover NYC_CWD="$main_path" girder-install web --plugins=jobs,worker,large_image,slicer_cli_web,colormaps,larger_image --dev
     # - pip install jupyter sphinx sphinx_rtd_theme nbsphinx travis-sphinx
     - pip freeze  # report what we have installed
 
