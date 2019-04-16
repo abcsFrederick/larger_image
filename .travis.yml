@@ -65,7 +65,7 @@ before_install:
     - CACHE="$HOME/.cache" OPENJPEG_VERSION=2.1.2 OPENJPEG_FILE=v2.1.2.tar.gz OPENJPEG_DIR=openjpeg-2.1.2 LIBTIFF_VERSION=4.0.8 OPENSLIDE_VERSION=3.4.1 source .install-openslide.sh
 
     - GIRDER_VERSION=2.x-maintenance
-    - GIRDER_WORKER_VERSION=master
+    - GIRDER_WORKER_VERSION=v0.5.1
     - LARGE_IMAGE_VERSION=master
     - main_path=$PWD
     - build_path=$PWD/build
