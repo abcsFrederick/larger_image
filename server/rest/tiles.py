@@ -177,10 +177,12 @@ class TilesItemResource(TilesItemResource):
             # TODO: error handling
             params['exclude'] = [int(s) for s in params['exclude'].split(',')]
         if Colormap and 'colormapId' in params:
+            # colormap = Colormap().load(params['colormapId'],
+            #                            force=True, exc=True)
+            #                            user=self.getCurrentUser(),
+            #                            level=AccessType.READ)
             colormap = Colormap().load(params['colormapId'],
                                        force=True, exc=True)
-                                       #user=self.getCurrentUser(),
-                                       #level=AccessType.READ)
             del params['colormapId']
             if 'bit' in params:
                 params['colormap'] = colormap['colormap']
@@ -188,7 +190,7 @@ class TilesItemResource(TilesItemResource):
                 # TODO: abstract in colormap
                 try:
                     params['colormap'] = bytearray(colormap['binary'])
-                except (KeyError, TypeError) as e:
+                except (KeyError, TypeError):
                     raise RestException('Invalid colormap on server',
                                         code=500)
         return self._getTile(item, z, x, y, params, mayRedirect=redirect)
