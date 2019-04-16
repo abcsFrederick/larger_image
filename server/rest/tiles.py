@@ -37,6 +37,11 @@ from girder.plugins.large_image.models import TileGeneralException
 from girder.plugins.large_image.rest.tiles import ImageMimeTypes, \
     TilesItemResource, _adjustParams
 
+try:
+    from girder.plugins.colormaps.models.colormap import Colormap
+except ImportError:
+    Colormap = None
+
 from ..models.larger_image_item import LargerImageItem
 
 
@@ -171,5 +176,19 @@ class TilesItemResource(TilesItemResource):
         if 'exclude' in params:
             # TODO: error handling
             params['exclude'] = [int(s) for s in params['exclude'].split(',')]
-        # TODO: colormap
+        if Colormap and 'colormapId' in params:
+            colormap = Colormap().load(params['colormapId'],
+                                       force=True, exc=True)
+                                       #user=self.getCurrentUser(),
+                                       #level=AccessType.READ)
+            del params['colormapId']
+            if 'bit' in params:
+                params['colormap'] = colormap['colormap']
+            else:
+                # TODO: abstract in colormap
+                try:
+                    params['colormap'] = bytearray(colormap['binary'])
+                except (KeyError, TypeError) as e:
+                    raise RestException('Invalid colormap on server',
+                                        code=500)
         return self._getTile(item, z, x, y, params, mayRedirect=redirect)
