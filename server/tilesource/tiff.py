@@ -66,8 +66,9 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
                 array[numpy.where(array != min_)] = 0
                 array[numpy.nonzero(array)] = 255
             else:
-                array -= min_
-                array *= 255/(max_ - min_)
+                array[numpy.where(array > max_)] = 0
+                array[numpy.where(array < min_)] = 0
+                array[numpy.nonzero(array)] = (array[numpy.nonzero(array)] - min_) * 255/(max_ - min_)
             tile = PIL.Image.fromarray(array.round())
             tile = tile.convert('L')
         return tile, tileEncoding
@@ -84,7 +85,9 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
             mask = tile.point(lambda x: 0 if x == 0 else 255, '1')
         palette = PIL.ImagePalette.ImagePalette(palette=colormap)
         tile.putpalette(palette)
+
         if label:
+            tile = tile.convert('RGB')
             tile.putalpha(mask)
         return tile, tileEncoding
 
@@ -139,6 +142,7 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
                                                       oneHot=oneHot)
 
         label = kwargs.get('label', False)
+
         if 'colormap' in kwargs and kwargs['colormap']:
             colormap = kwargs['colormap']
             tile, tileEncoding = self._colormapImage(tile, tileEncoding,
