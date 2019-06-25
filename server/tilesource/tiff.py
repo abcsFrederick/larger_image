@@ -68,7 +68,7 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
             else:
                 array[numpy.where(array > max_)] = 0
                 array[numpy.where(array < min_)] = 0
-                array[numpy.nonzero(array)] = (array[numpy.nonzero(array)] - min_) * 255/(max_ - min_)
+                array[numpy.nonzero(array)] = (array[numpy.nonzero(array)] - min_)*255/(max_ - min_)
             tile = PIL.Image.fromarray(array.round())
             tile = tile.convert('L')
         return tile, tileEncoding
