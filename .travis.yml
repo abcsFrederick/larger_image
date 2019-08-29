@@ -66,10 +66,11 @@ before_install:
 
     - GIRDER_VERSION=2.x-maintenance
     - GIRDER_WORKER_VERSION=v0.5.1
-    - LARGE_IMAGE_VERSION=master
+    - LARGE_IMAGE_VERSION=2.x-maintenance
     - SLICER_CLI_WEB_VERSION=master
     - COLORMAPS_VERSION=master
     - main_path=$PWD
+    - LARGER_IMAGE_PATH=$TRAVIS_BUILD_DIR
     - build_path=$PWD/build
     - mkdir -p $build_path
 
@@ -139,5 +140,5 @@ after_failure:
     - cat /tmp/worker.out
 
 after_success:
-    - bash <(curl -s https://codecov.io/bash) -R $main_path -s $girder_path
+    - bash <(curl -s https://codecov.io/bash) -R $LARGER_IMAGE_PATH -s $girder_path
     # - travis-sphinx deploy
