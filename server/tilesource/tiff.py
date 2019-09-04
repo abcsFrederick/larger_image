@@ -78,7 +78,8 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
             else:
                 array[numpy.where(array > max_)] = 0
                 array[numpy.where(array < min_)] = 0
-                # array[numpy.nonzero(array)] = (array[numpy.nonzero(array)] - min_)*255/(max_ - min_)
+                # array[numpy.nonzero(array)] = (array[numpy.nonzero(array)]
+                # - min_)*255/(max_ - min_)
             # remove artifact generated from visual mistake
             tile = PIL.Image.fromarray(array.round())
             tile = tile.convert('L')
@@ -216,6 +217,8 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
     #             return self._outputTile(image, 'PIL', x, y, z, pilImageAllowed,
     #                                     **kwargs)
     #         raise TileSourceException('Internal I/O failure: %s' % e.args[0])
+
+
 class TiffGirderTileSource(TiffFileTileSource, GirderTileSource):
     """
     Provides tile access to Girder items with a TIFF file.

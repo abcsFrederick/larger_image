@@ -27,7 +27,7 @@ import cherrypy
 from girder.api import access, filter_logging
 from girder.api.v1.item import Item as ItemResource
 from girder.api.describe import describeRoute, Description
-from girder.api.rest import filtermodel, loadmodel, setResponseHeader, setRawResponse
+from girder.api.rest import filtermodel, loadmodel, setResponseHeader  # , setRawResponse
 from girder.exceptions import RestException
 from girder.models.model_base import AccessType
 from girder.models.file import File
@@ -55,7 +55,7 @@ class TilesItemResource(TilesItemResource):
         apiRoot.item.route('GET', (':itemId', 'tiles', 'extended', 'zxy', ':z', ':x', ':y'),
                            self.getTile)
         # apiRoot.item.route('POST', (':itemId', 'tiles', 'extended', 'zxy', ':z', ':x', ':y'),
-                           # self.saveTile)
+        # self.saveTile)
         filter_logging.addLoggingFilter(
             'GET (/[^/ ?#]+)*/item/[^/ ?#]+/tiles/zxy(/[^/ ?#]+){3}',
             frequency=250)

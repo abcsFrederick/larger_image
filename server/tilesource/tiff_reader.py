@@ -1,5 +1,5 @@
-import os
-import six
+# import os
+# import six
 from girder import logger
 
 from girder.plugins.large_image.tilesource import tiff_reader
