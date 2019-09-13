@@ -66,7 +66,7 @@ before_install:
 
     - GIRDER_VERSION=2.x-maintenance
     - GIRDER_WORKER_VERSION=v0.5.1
-    - LARGE_IMAGE_VERSION=master
+    - LARGE_IMAGE_VERSION=2.x-maintenance
     - SLICER_CLI_WEB_VERSION=master
     - COLORMAPS_VERSION=master
     - main_path=$PWD
