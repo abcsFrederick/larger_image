@@ -199,8 +199,8 @@ class LargerImageItem(ImageItem):
         tileMimeType = tileSource.getTileMimeType()
         return tileData, tileMimeType
 
-    def saveTile(self, item, x, y, z, data, mayRedirect=False, **kwargs):
-        tileSource = self._loadTileSource(item, **kwargs)
-        tileData = tileSource.saveTile(x, y, z, data, mayRedirect=mayRedirect)
-        tileMimeType = tileSource.getTileMimeType()
-        return tileData, tileMimeType
+    # def saveTile(self, item, x, y, z, data, mayRedirect=False, **kwargs):
+    #     tileSource = self._loadTileSource(item, **kwargs)
+    #     tileData = tileSource.saveTile(x, y, z, data, mayRedirect=mayRedirect)
+    #     tileMimeType = tileSource.getTileMimeType()
+    #     return tileData, tileMimeType
