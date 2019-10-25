@@ -55,6 +55,8 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
             tile = PIL.Image.open(BytesIO(tile))
             tileEncoding = TILE_FORMAT_PIL
         if len(tile.getbands()) > 1:
+            if range_ == (0, 255) and not exclude and not oneHot:
+                return tile, tileEncoding
             raise NotImplementedError('single band label images only')
         if oneHot:
             if tile.mode != 'L':
