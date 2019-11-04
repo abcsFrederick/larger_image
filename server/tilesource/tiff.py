@@ -20,6 +20,15 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
     cacheName = 'tilesource'
     name = 'tifffile'
 
+    # def _editing(self, tile, tileEncoding, mask, value):
+    #     if tileEncoding != TILE_FORMAT_PIL:
+    #         tile = PIL.Image.open(BytesIO(tile))
+    #         tileEncoding = TILE_FORMAT_PIL
+    #     tileArray = numpy.asarray(tile)
+    #     newtile = numpy.ma.array(tileArray, mask=mask, fill_value=value)
+    #     newtile = newtile.filled()
+    #     tile = PIL.Image.fromarray(newtile)
+    #     return tile, tileEncoding
     def _bit(self, tile, tileEncoding, channel, colormap=None):
         if tileEncoding != TILE_FORMAT_PIL:
             tile = PIL.Image.open(BytesIO(tile))
@@ -64,12 +73,16 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
         else:
             array = numpy.asarray(tile, dtype=numpy.float32)
             min_, max_ = range_
+
             if min_ == max_:
                 array[numpy.where(array != min_)] = 0
                 array[numpy.nonzero(array)] = 255
             else:
-                array -= min_
-                array *= 255/(max_ - min_)
+                array[numpy.where(array > max_)] = 0
+                array[numpy.where(array < min_)] = 0
+                # array[numpy.nonzero(array)] = (array[numpy.nonzero(array)]
+                # - min_)*255/(max_ - min_)
+            # remove artifact generated from visual mistake
             tile = PIL.Image.fromarray(array.round())
             tile = tile.convert('L')
         return tile, tileEncoding
@@ -86,7 +99,9 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
             mask = tile.point(lambda x: 0 if x == 0 else 255, '1')
         palette = PIL.ImagePalette.ImagePalette(palette=colormap)
         tile.putpalette(palette)
+
         if label:
+            tile = tile.convert('RGB')
             tile.putalpha(mask)
         return tile, tileEncoding
 
@@ -117,6 +132,15 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
 
     def _outputTile(self, tile, tileEncoding, *args, **kwargs):
         encoding = self.encoding
+        # editing = kwargs.get('editing')
+        # if editing is not None:
+        #     if int(editing) != 0:
+        #         mask = numpy.zeros((256, 256), dtype=bool)
+        #         for x in range(63,128):
+        #             for y in range(63,128):
+        #                 mask[x][y] = 1
+        #         value = 0
+        #         tile, tileEncoding = self._editing(tile, tileEncoding, mask, value)
 
         bit = kwargs.get('bit')
         if bit is not None:
@@ -141,6 +165,7 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
                                                       oneHot=oneHot)
 
         label = kwargs.get('label', False)
+
         if 'colormap' in kwargs and kwargs['colormap']:
             colormap = kwargs['colormap']
             tile, tileEncoding = self._colormapImage(tile, tileEncoding,
@@ -159,6 +184,41 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
                                                              *args, **kwargs)
         self.encoding = encoding
         return result
+
+    # def saveTile(self, x, y, z, data, **kwargs):
+    #     print 'save modified tile in tiff.py'
+    #     try:
+    #         if self._tiffDirectories[z] is None:
+    #             if sparseFallback:
+    #                 raise IOTiffException('Missing z level %d' % z)
+    #             tile = self.getTileFromEmptyDirectory(x, y, z)
+    #             format = TILE_FORMAT_PIL
+    #         else:
+    #             tile = self._tiffDirectories[z].saveTile(x, y, data)
+    #             format = 'JPEG'
+    #         if PIL and isinstance(tile, PIL.Image.Image):
+    #             format = TILE_FORMAT_PIL
+    #         return self._outputTile(tile, format, x, y, z, pilImageAllowed,
+    #                                 **kwargs)
+    #     except IndexError:
+    #         raise TileSourceException('z layer does not exist')
+    #     except InvalidOperationTiffException as e:
+    #         raise TileSourceException(e.args[0])
+    #     except IOTiffException as e:
+    #         if sparseFallback and z and PIL:
+    #             image = self.getTile(x / 2, y / 2, z - 1, pilImageAllowed=True,
+    #                                  sparseFallback=sparseFallback, edge=False)
+    #             if not isinstance(image, PIL.Image.Image):
+    #                 image = PIL.Image.open(BytesIO(image))
+    #             image = image.crop((
+    #                 self.tileWidth / 2 if x % 2 else 0,
+    #                 self.tileHeight / 2 if y % 2 else 0,
+    #                 self.tileWidth if x % 2 else self.tileWidth / 2,
+    #                 self.tileHeight if y % 2 else self.tileHeight / 2))
+    #             image = image.resize((self.tileWidth, self.tileHeight))
+    #             return self._outputTile(image, 'PIL', x, y, z, pilImageAllowed,
+    #                                     **kwargs)
+    #         raise TileSourceException('Internal I/O failure: %s' % e.args[0])
 
 
 class TiffGirderTileSource(TiffFileTileSource, GirderTileSource):
