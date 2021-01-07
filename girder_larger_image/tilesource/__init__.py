@@ -1,5 +1,5 @@
-from girder.plugins.large_image.tilesource import AvailableTileSources, TileSourceException
-
+from large_image.tilesource import AvailableTileSources
+from large_image.exceptions import TileSourceException
 from .tiff import TiffFileTileSource, TiffGirderTileSource
 
 AvailableTileSources['tifffile'] = TiffFileTileSource

@@ -32,13 +32,13 @@ from girder.exceptions import RestException
 from girder.models.model_base import AccessType
 from girder.models.file import File
 
-from girder.plugins.large_image import loadmodelcache
-from girder.plugins.large_image.models import TileGeneralException
-from girder.plugins.large_image.rest.tiles import ImageMimeTypes, \
+from girder_large_image import loadmodelcache
+from girder_large_image.rest.tiles import ImageMimeTypes, \
     TilesItemResource, _adjustParams
+from large_image.exceptions import TileGeneralException
 
 try:
-    from girder.plugins.colormaps.models.colormap import Colormap
+    from girder_colormaps.models.colormap import Colormap
 except ImportError:
     Colormap = None
 
@@ -151,8 +151,7 @@ class TilesItemResource(TilesItemResource):
     #   @loadmodel(model='item', map={'itemId': 'item'}, level=AccessType.READ)
     #   def getTile(self, item, z, x, y, params):
     #       return self._getTile(item, z, x, y, params, True)
-    @access.cookie   # access.cookie always looks up the token
-    @access.public
+    @access.public(cookie=True) # access.cookie always looks up the token
     def getTile(self, itemId, z, x, y, params):
         _adjustParams(params)
         item = loadmodelcache.loadModel(

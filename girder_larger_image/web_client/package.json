@@ -1,0 +1,17 @@
+{
+    "name": "@girder/larger_image",
+    "description": "Create, serve, and display large multiresolution images with extended datatypes.",
+    "version": "0.1.0",
+    "dependencies": {
+    },
+    "license": "Apache-2.0",
+    "main": "./index.js",
+    "girderPlugin": {
+        "name": "larger_image",
+        "main": "./main.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/abcsFrederick/larger_image"
+    }
+}

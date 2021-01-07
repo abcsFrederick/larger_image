@@ -24,10 +24,10 @@
 import os.path
 import time
 
-from girder.plugins.jobs.models.job import Job
-from girder.plugins.large_image.models.base import TileGeneralException
-from girder.plugins.large_image.models.image_item import ImageItem
-from girder.plugins.worker import utils as workerUtils
+from girder_jobs.models.job import Job
+from large_image.exceptions import TileGeneralException
+from girder_large_image.models.image_item import ImageItem
+from girder_worker import utils as workerUtils
 
 from ..tilesource import AvailableTileSources, TileSourceException
 

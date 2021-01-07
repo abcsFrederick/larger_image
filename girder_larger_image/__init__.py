@@ -23,7 +23,11 @@
 ###############################################################################
 
 from .rest import TilesItemResource
+from girder import plugin
 
 
-def load(info):
-    TilesItemResource(info['apiRoot'])
+class LargerImagePlugin(plugin.GirderPlugin):
+    DISPLAY_NAME = 'LargerImage'
+    CLIENT_SOURCE_PATH = 'web_client'
+    def load(self, info):
+        TilesItemResource(info['apiRoot'])

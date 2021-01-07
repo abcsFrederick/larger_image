@@ -1,14 +1,14 @@
-import View from 'girder/views/View';
-import { handleClose, handleOpen } from 'girder/dialog';
-import { restRequest } from 'girder/rest';
-import events from 'girder/events';
+import View from '@girder/core/views/View';
+import { handleClose, handleOpen } from '@girder/core/dialog';
+import { restRequest } from '@girder/core/rest';
+import events from '@girder/core/events';
 
 import LargeImageWidgetTemplate from '../templates/largeImageWidget.pug';
 
 import '../stylesheets/largeImageWidget.styl';
 
-import 'girder/utilities/jquery/girderEnable';
-import 'girder/utilities/jquery/girderModal';
+import '@girder/core/utilities/jquery/girderEnable';
+import '@girder/core/utilities/jquery/girderModal';
 
 var LargeImageWidget = View.extend({
     events: {

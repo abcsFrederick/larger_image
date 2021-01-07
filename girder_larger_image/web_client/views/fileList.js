@@ -1,6 +1,6 @@
-import FileListWidget from 'girder/views/widgets/FileListWidget';
-import { wrap } from 'girder/utilities/PluginUtils';
-import { AccessType } from 'girder/constants';
+import FileListWidget from '@girder/core/views/widgets/FileListWidget';
+import { wrap } from '@girder/core/utilities/PluginUtils';
+import { AccessType } from '@girder/core/constants';
 
 import LargeImageWidget from './largeImageWidget';
 

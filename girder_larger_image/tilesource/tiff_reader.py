@@ -2,7 +2,7 @@
 # import six
 from girder import logger
 
-from girder.plugins.large_image.tilesource import tiff_reader
+from large_image_source_tiff import tiff_reader
 
 try:
     from libtiff import libtiff_ctypes
