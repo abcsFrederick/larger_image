@@ -27,7 +27,7 @@ import time
 from girder_jobs.models.job import Job
 from large_image.exceptions import TileGeneralException
 from girder_large_image.models.image_item import ImageItem
-from girder_worker import utils as workerUtils
+from girder_worker.girder_plugin import utils as workerUtils
 
 from ..tilesource import AvailableTileSources, TileSourceException
 
