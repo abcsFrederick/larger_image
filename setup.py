@@ -4,6 +4,9 @@ with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 requirements = [
+    'large-image',
+    'large_image_source_tiff',
+    'large_image_source_openslide'
 ]
 
 setup(
