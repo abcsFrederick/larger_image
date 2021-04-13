@@ -74,7 +74,7 @@ class LargerImageItem(ImageItem):
         self.save(item)
         return job
 
-    def _createLargeImageJob(self, item, fileObj, user, token, quality=90,
+    def _createLargeImageJob(self, item, fileObj, user, token, quality=90, tileSize=256,
                              compression='JPEG'):
         path = os.path.join(os.path.dirname(__file__), '..', 'create_tiff.py')
         with open(path, 'r') as f:
@@ -144,7 +144,7 @@ class LargerImageItem(ImageItem):
                 'mode': 'inline',
                 'type': 'number',
                 'format': 'number',
-                'data': 256
+                'data': tileSize
             },
             'out_filename': {
                 'mode': 'inline',
