@@ -72,7 +72,7 @@ class TilesItemResource(TilesItemResource):
                'a nofication can be sent when it is complete.',
                dataType='boolean', default=True, required=False)
         .param('quality', 'The quality of JPEG compression.',
-               dataType='int', default=90, required=False)
+               dataType='int', default=100, required=False)
         .param('tileSize', 'The tile Size of WSI.',
                dataType='int', default=256, required=False)
         .param('compression', 'The image compression type.',
