@@ -1,0 +1,41 @@
+Metadata-Version: 2.1
+Name: girder-larger-image
+Version: 0.1.0
+Summary: Create, serve, and display large multiresolution images with extended datatypes.
+Home-page: https://github.com/abcsFrederick/larger_image
+Author: Tianyi Miao
+Author-email: tymiao1220@gmail.com
+License: Apache Software License 2.0
+Description: =====================================
+        larger_image |build-status| |codecov-io|
+        =====================================
+        
+        <<<<<<< HEAD
+        .. |build-status| image:: https://travis-ci.org/abcsFrederick/larger_image.svg?branch=master?branch=tymiao
+            :target: https://travis-ci.org/abcsFrederick/larger_image?branch=tymiao
+            :alt: Build Status
+        
+        .. |codecov-io| image:: https://codecov.io/github/abcsFrederick/larger_image/coverage.svg?branch=tymiao
+            :target: https://codecov.io/github/abcsFrederick/larger_image/branch/tymiao
+        =======
+        .. |build-status| image:: https://travis-ci.org/abcsFrederick/larger_image.svg?branch=master
+            :target: https://travis-ci.org/abcsFrederick/larger_image
+            :alt: Build Status
+        
+        .. |codecov-io| image:: https://codecov.io/github/abcsFrederick/larger_image/coverage.svg?branch=master
+            :target: https://codecov.io/github/abcsFrederick/larger_image?branch=master
+        >>>>>>> 4a3de33f4a1fe7b660da72ec352dfb7fb51e066d
+            :alt: codecov.io
+        
+        Girder plugin for extending the large_image plugin.
+        
+Keywords: girder-plugin,larger_image_girder3
+Platform: UNKNOWN
+Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Natural Language :: English
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Description-Content-Type: text/x-rst

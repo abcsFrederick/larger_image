@@ -73,6 +73,8 @@ class TilesItemResource(TilesItemResource):
                dataType='boolean', default=True, required=False)
         .param('quality', 'The quality of JPEG compression.',
                dataType='int', default=90, required=False)
+        .param('tileSize', 'The tile Size of WSI.',
+               dataType='int', default=256, required=False)
         .param('compression', 'The image compression type.',
                required=False, default='JPEG',
                enum=['none', 'JPEG', 'Deflate', 'PackBits', 'LZW'])
@@ -98,7 +100,7 @@ class TilesItemResource(TilesItemResource):
             return self.imageItemModel.createImageItem(
                 item, largeImageFile, user, token,
                 notify=self.boolParam('notify', params, default=True),
-                quality=params.get('quality', 90),
+                quality=params.get('quality', 90), tileSize=params.get('tileSize', 256),
                 compression=params.get('compression', 'jpeg').lower())
         except TileGeneralException as e:
             raise RestException(e.args[0])

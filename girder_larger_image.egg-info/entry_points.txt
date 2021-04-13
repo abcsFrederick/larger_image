@@ -1,0 +1,3 @@
+[girder.plugin]
+larger_image = girder_larger_image:LargerImagePlugin
+

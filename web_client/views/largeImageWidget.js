@@ -18,7 +18,8 @@ var LargeImageWidget = View.extend({
                 fileId: this.file.id,
                 notify: this.$('#l-notify').is(':checked'),
                 compression: this.$('#l-compression').val(),
-                quality: this.$('#l-quality').val()
+                quality: this.$('#l-quality').val(),
+                tileSize: this.$('#l-tileSize').val()
             };
 
             restRequest({
@@ -83,6 +84,9 @@ var LargeImageWidget = View.extend({
                     break;
                 case 'quality':
                     $('#l-quality').val(parameter.default);
+                    break;
+                case 'tileSize':
+                    $('#l-tileSize').val(parameter.default);
                     break;
             }
         });
