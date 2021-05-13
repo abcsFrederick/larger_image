@@ -24,10 +24,10 @@
 import os.path
 import time
 
-from girder.plugins.jobs.models.job import Job
-from girder.plugins.large_image.models.base import TileGeneralException
-from girder.plugins.large_image.models.image_item import ImageItem
-from girder.plugins.worker import utils as workerUtils
+from girder_jobs.models.job import Job
+from large_image.exceptions import TileGeneralException
+from girder_large_image.models.image_item import ImageItem
+from girder_worker.girder_plugin import utils as workerUtils
 
 from ..tilesource import AvailableTileSources, TileSourceException
 
@@ -74,7 +74,7 @@ class LargerImageItem(ImageItem):
         self.save(item)
         return job
 
-    def _createLargeImageJob(self, item, fileObj, user, token, quality=90,
+    def _createLargeImageJob(self, item, fileObj, user, token, quality=90, tileSize=256,
                              compression='JPEG'):
         path = os.path.join(os.path.dirname(__file__), '..', 'create_tiff.py')
         with open(path, 'r') as f:
@@ -144,7 +144,7 @@ class LargerImageItem(ImageItem):
                 'mode': 'inline',
                 'type': 'number',
                 'format': 'number',
-                'data': 256
+                'data': tileSize
             },
             'out_filename': {
                 'mode': 'inline',

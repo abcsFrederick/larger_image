@@ -1,14 +1,14 @@
-import View from 'girder/views/View';
-import { handleClose, handleOpen } from 'girder/dialog';
-import { restRequest } from 'girder/rest';
-import events from 'girder/events';
+import View from '@girder/core/views/View';
+import { handleClose, handleOpen } from '@girder/core/dialog';
+import { restRequest } from '@girder/core/rest';
+import events from '@girder/core/events';
 
 import LargeImageWidgetTemplate from '../templates/largeImageWidget.pug';
 
 import '../stylesheets/largeImageWidget.styl';
 
-import 'girder/utilities/jquery/girderEnable';
-import 'girder/utilities/jquery/girderModal';
+import '@girder/core/utilities/jquery/girderEnable';
+import '@girder/core/utilities/jquery/girderModal';
 
 var LargeImageWidget = View.extend({
     events: {
@@ -18,7 +18,8 @@ var LargeImageWidget = View.extend({
                 fileId: this.file.id,
                 notify: this.$('#l-notify').is(':checked'),
                 compression: this.$('#l-compression').val(),
-                quality: this.$('#l-quality').val()
+                quality: this.$('#l-quality').val(),
+                tileSize: this.$('#l-tileSize').val()
             };
 
             restRequest({
@@ -67,6 +68,7 @@ var LargeImageWidget = View.extend({
     // FIXME: where does girder implement this?
     _setApiDefaults: function (description) {
         var parameters = description.paths['/item/{itemId}/tiles/extended'].post.parameters;
+        console.log(parameters)
         parameters.forEach((parameter) => {
             switch (parameter.name) {
                 case 'notify':
@@ -83,6 +85,9 @@ var LargeImageWidget = View.extend({
                     break;
                 case 'quality':
                     $('#l-quality').val(parameter.default);
+                    break;
+                case 'tileSize':
+                    $('#l-tileSize').val(parameter.default);
                     break;
             }
         });

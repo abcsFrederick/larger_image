@@ -7,9 +7,13 @@ import PIL.ImagePalette
 
 import numpy
 
-from girder.plugins.large_image.tilesource import tiff
-from girder.plugins.large_image.tilesource.base import GirderTileSource, \
-    TILE_FORMAT_PIL
+import large_image_source_tiff as tiff
+# from girder.plugins.large_image.tilesource.base import GirderTileSource, \
+#     TILE_FORMAT_PIL
+
+from large_image.tilesource.base import TILE_FORMAT_PIL
+
+from large_image_source_tiff import girder_source
 
 from .tiff_reader import TiledTiffDirectory
 
@@ -221,9 +225,6 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
     #         raise TileSourceException('Internal I/O failure: %s' % e.args[0])
 
 
-class TiffGirderTileSource(TiffFileTileSource, GirderTileSource):
-    """
-    Provides tile access to Girder items with a TIFF file.
-    """
+class TiffGirderTileSource(TiffFileTileSource, girder_source.TiffGirderTileSource):
     cacheName = 'tilesource'
     name = 'tiff'

@@ -32,13 +32,13 @@ from girder.exceptions import RestException
 from girder.models.model_base import AccessType
 from girder.models.file import File
 
-from girder.plugins.large_image import loadmodelcache
-from girder.plugins.large_image.models import TileGeneralException
-from girder.plugins.large_image.rest.tiles import ImageMimeTypes, \
+from girder_large_image import loadmodelcache
+from girder_large_image.rest.tiles import ImageMimeTypes, \
     TilesItemResource, _adjustParams
+from large_image.exceptions import TileGeneralException
 
 try:
-    from girder.plugins.colormaps.models.colormap import Colormap
+    from girder_colormaps.models.colormap import Colormap
 except ImportError:
     Colormap = None
 
@@ -72,7 +72,9 @@ class TilesItemResource(TilesItemResource):
                'a nofication can be sent when it is complete.',
                dataType='boolean', default=True, required=False)
         .param('quality', 'The quality of JPEG compression.',
-               dataType='int', default=90, required=False)
+               dataType='int', default=100, required=False)
+        .param('tileSize', 'The tile Size of WSI.',
+               dataType='int', default=256, required=False)
         .param('compression', 'The image compression type.',
                required=False, default='JPEG',
                enum=['none', 'JPEG', 'Deflate', 'PackBits', 'LZW'])
@@ -98,7 +100,7 @@ class TilesItemResource(TilesItemResource):
             return self.imageItemModel.createImageItem(
                 item, largeImageFile, user, token,
                 notify=self.boolParam('notify', params, default=True),
-                quality=params.get('quality', 90),
+                quality=params.get('quality', 90), tileSize=params.get('tileSize', 256),
                 compression=params.get('compression', 'jpeg').lower())
         except TileGeneralException as e:
             raise RestException(e.args[0])
@@ -151,8 +153,7 @@ class TilesItemResource(TilesItemResource):
     #   @loadmodel(model='item', map={'itemId': 'item'}, level=AccessType.READ)
     #   def getTile(self, item, z, x, y, params):
     #       return self._getTile(item, z, x, y, params, True)
-    @access.cookie   # access.cookie always looks up the token
-    @access.public
+    @access.public(cookie=True) # access.cookie always looks up the token
     def getTile(self, itemId, z, x, y, params):
         _adjustParams(params)
         item = loadmodelcache.loadModel(

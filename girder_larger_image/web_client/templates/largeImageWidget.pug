@@ -15,6 +15,9 @@
           label#l-quality-label.control-label(for="l-quality") Quality
           input#l-quality(
             type="range", min="0", max="100", step="1", value=quality)
+        .form-group
+          label#l-tileSize-label.control-label(for="l-tileSize") Tile Size
+          input#l-tileSize.form-control(value=tileSize)
         .l-validation-failed-message
       .modal-footer
         a.btn.btn-small.btn-default(data-dismiss="modal") Cancel
