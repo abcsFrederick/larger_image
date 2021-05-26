@@ -1,41 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-###############################################################################
-#  Girder, large_image plugin framework and tests adapted from Kitware Inc.
-#  source and documentation by the Imaging and Visualization Group, Advanced
-#  Biomedical Computational Science, Frederick National Laboratory for Cancer
-#  Research.
-#
-#  Copyright Kitware Inc.
-#
-#  Licensed under the Apache License, Version 2.0 ( the "License" );
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-###############################################################################
-
 import cherrypy
+import os 
+import urllib
+import pathlib
 
 from girder.api import access, filter_logging
 from girder.api.v1.item import Item as ItemResource
 from girder.api.describe import describeRoute, Description
-from girder.api.rest import filtermodel, loadmodel, setResponseHeader  # , setRawResponse
+from girder.api.rest import filtermodel, loadmodel, setResponseHeader, setRawResponse
 from girder.exceptions import RestException
 from girder.models.model_base import AccessType
 from girder.models.file import File
+from girder.utility.progress import setResponseTimeLimit
 
 from girder_large_image import loadmodelcache
 from girder_large_image.rest.tiles import ImageMimeTypes, \
-    TilesItemResource, _adjustParams
+    TilesItemResource, _adjustParams, _handleETag
 from large_image.exceptions import TileGeneralException
+from large_image.constants import TileInputUnits
 
 try:
     from girder_colormaps.models.colormap import Colormap
@@ -44,6 +27,12 @@ except ImportError:
 
 from ..models.larger_image_item import LargerImageItem
 
+
+MimeTypeExtensions = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/tiff': 'tiff',
+}
 
 class TilesItemResource(TilesItemResource):
     def __init__(self, apiRoot):
@@ -54,6 +43,8 @@ class TilesItemResource(TilesItemResource):
                            self.createTiles)
         apiRoot.item.route('GET', (':itemId', 'tiles', 'extended', 'zxy', ':z', ':x', ':y'),
                            self.getTile)
+        apiRoot.item.route('GET', (':itemId', 'tiles', 'extended', 'region'),
+                           self.getTilesRegion)
         # apiRoot.item.route('POST', (':itemId', 'tiles', 'extended', 'zxy', ':z', ':x', ':y'),
         # self.saveTile)
         filter_logging.addLoggingFilter(
@@ -61,6 +52,38 @@ class TilesItemResource(TilesItemResource):
             frequency=250)
         # Cache the model singleton
         self.imageItemModel = LargerImageItem()
+
+    def _setContentDisposition(self, item, contentDisposition, mime, subname, fullFilename=None):
+        """
+        If requested, set the content disposition and a suggested file name.
+        :param item: an item that includes a name.
+        :param contentDisposition: either 'inline' or 'attachment', otherwise
+            no header is added.
+        :param mime: the mimetype of the output image.  Used for the filename
+            suffix.
+        :param subname: a subname to append to the item name.
+        :param fullFilename: if specified, use this instead of the item name
+            and the subname.
+        """
+        if (not item or not item.get('name') or
+                mime not in MimeTypeExtensions or
+                contentDisposition not in ('inline', 'attachment')):
+            return
+        if fullFilename:
+            filename = fullFilename
+        else:
+            filename = os.path.splitext(item['name'])[0]
+            if subname:
+                filename += '-' + subname
+            filename += '.' + MimeTypeExtensions[mime]
+        if not isinstance(filename, str):
+            filename = filename.decode('utf8', 'ignore')
+        safeFilename = filename.encode('ascii', 'ignore').replace(b'"', b'')
+        encodedFilename = urllib.parse.quote(filename.encode('utf8', 'ignore'))
+        setResponseHeader(
+            'Content-Disposition',
+            '%s; filename="%s"; filename*=UTF-8\'\'%s' % (
+                contentDisposition, safeFilename, encodedFilename))
 
     @describeRoute(
         Description('Create a large image for this item.')
@@ -198,6 +221,155 @@ class TilesItemResource(TilesItemResource):
                                         code=500)
         return self._getTile(item, z, x, y, params, mayRedirect=redirect)
 
+    @describeRoute(
+        Description('Get any region of a large image item, optionally scaling '
+                    'it.')
+        .notes('If neither width nor height is specified, the full resolution '
+               'region is returned.  If a width or height is specified, '
+               'aspect ratio is always preserved (if both are given, the '
+               'resulting image may be smaller in one of the two '
+               'dimensions).  When scaling must be applied, the image is '
+               'downsampled from a higher resolution layer, never upsampled.')
+        .param('itemId', 'The ID of the item.', paramType='path')
+        .param('left', 'The left column (0-based) of the region to process.  '
+               'Negative values are offsets from the right edge.',
+               required=False, dataType='float')
+        .param('top', 'The top row (0-based) of the region to process.  '
+               'Negative values are offsets from the bottom edge.',
+               required=False, dataType='float')
+        .param('right', 'The right column (0-based from the left) of the '
+               'region to process.  The region will not include this column.  '
+               'Negative values are offsets from the right edge.',
+               required=False, dataType='float')
+        .param('bottom', 'The bottom row (0-based from the top) of the region '
+               'to process.  The region will not include this row.  Negative '
+               'values are offsets from the bottom edge.',
+               required=False, dataType='float')
+        .param('regionWidth', 'The width of the region to process.',
+               required=False, dataType='float')
+        .param('regionHeight', 'The height of the region to process.',
+               required=False, dataType='float')
+        .param('units', 'Units used for left, top, right, bottom, '
+               'regionWidth, and regionHeight.  base_pixels are pixels at the '
+               'maximum resolution, pixels and mm are at the specified '
+               'magnfication, fraction is a scale of [0-1].', required=False,
+               enum=sorted(set(TileInputUnits.values())),
+               default='base_pixels')
+        .param('width', 'The maximum width of the output image in pixels.',
+               required=False, dataType='int')
+        .param('height', 'The maximum height of the output image in pixels.',
+               required=False, dataType='int')
+        .param('fill', 'A fill color.  If output dimensions are specified and '
+               'fill is specified and not "none", the output image is padded '
+               'on either the sides or the top and bottom to the requested '
+               'output size.  Most css colors are accepted.', required=False)
+        .param('magnification', 'Magnification of the output image.  If '
+               'neither width for height is specified, the magnification, '
+               'mm_x, and mm_y parameters are used to select the output size.',
+               required=False, dataType='float')
+        .param('mm_x', 'The size of the output pixels in millimeters',
+               required=False, dataType='float')
+        .param('mm_y', 'The size of the output pixels in millimeters',
+               required=False, dataType='float')
+        .param('exact', 'If magnification, mm_x, or mm_y are specified, they '
+               'must match an existing level of the image exactly.',
+               required=False, dataType='boolean', default=False)
+        .param('frame', 'For multiframe images, the 0-based frame number.  '
+               'This is ignored on non-multiframe images.', required=False,
+               dataType='int')
+        .param('encoding', 'Output image encoding.  TILED generates a tiled '
+               'tiff without the upper limit on image size the other options '
+               'have.  For geospatial sources, TILED will also have '
+               'appropriate tagging.', required=False,
+               enum=['JPEG', 'PNG', 'TIFF', 'TILED'], default='JPEG')
+        .param('jpegQuality', 'Quality used for generating JPEG images',
+               required=False, dataType='int', default=95)
+        .param('jpegSubsampling', 'Chroma subsampling used for generating '
+               'JPEG images.  0, 1, and 2 are full, half, and quarter '
+               'resolution chroma respectively.', required=False,
+               enum=['0', '1', '2'], dataType='int', default='0')
+        .param('tiffCompression', 'Compression method when storing a TIFF '
+               'image', required=False,
+               enum=['none', 'raw', 'lzw', 'tiff_lzw', 'jpeg', 'deflate',
+                     'tiff_adobe_deflate'])
+        .param('style', 'JSON-encoded style string', required=False)
+        .param('resample', 'If false, an existing level of the image is used '
+               'for the region.  If true, the internal values are '
+               'interpolated to match the specified size as needed.  0-3 for '
+               'a specific interpolation method (0-nearest, 1-lanczos, '
+               '2-bilinear, 3-bicubic)', required=False,
+               enum=['false', 'true', '0', '1', '2', '3'])
+        .param('contentDisposition', 'Specify the Content-Disposition response '
+               'header disposition-type value.', required=False,
+               enum=['inline', 'attachment'])
+        .param('contentDispositionFilename', 'Specify the filename used in '
+               'the Content-Disposition response header.', required=False)
+        .produces(ImageMimeTypes)
+        .errorResponse('ID was invalid.')
+        .errorResponse('Read access was denied for the item.', 403)
+        .errorResponse('Insufficient memory.')
+    )
+    @access.public(cookie=True)
+    @loadmodel(model='item', map={'itemId': 'item'}, level=AccessType.READ)
+    def getTilesRegion(self, item, params):
+        _adjustParams(params)
+        params = self._parseParams(params, True, [
+            ('left', float, 'region', 'left'),
+            ('top', float, 'region', 'top'),
+            ('right', float, 'region', 'right'),
+            ('bottom', float, 'region', 'bottom'),
+            ('regionWidth', float, 'region', 'width'),
+            ('regionHeight', float, 'region', 'height'),
+            ('units', str, 'region', 'units'),
+            ('unitsWH', str, 'region', 'unitsWH'),
+            ('width', int, 'output', 'maxWidth'),
+            ('height', int, 'output', 'maxHeight'),
+            ('fill', str),
+            ('magnification', float, 'scale', 'magnification'),
+            ('mm_x', float, 'scale', 'mm_x'),
+            ('mm_y', float, 'scale', 'mm_y'),
+            ('exact', bool, 'scale', 'exact'),
+            ('frame', int),
+            ('encoding', str),
+            ('jpegQuality', int),
+            ('jpegSubsampling', int),
+            ('tiffCompression', str),
+            ('style', str),
+            ('resample', 'boolOrInt'),
+            ('contentDisposition', str),
+            ('contentDispositionFileName', str)
+        ])
+        _handleETag('getTilesRegion', item, params)
+        setResponseTimeLimit(86400)
+        try:
+            regionData, regionMime = self.imageItemModel.getRegion(
+                item, **params)
+        except TileGeneralException as e:
+            raise RestException(e.args[0])
+        except ValueError as e:
+            raise RestException('Value Error: %s' % e.args[0])
+        subname = str(params.get('region')['top']) + ',' + str(params.get('region')['left'])
+
+        self._setContentDisposition(
+            item, params.get('contentDisposition'), regionMime, subname,
+            params.get('contentDispositionFilename'))
+        setResponseHeader('Content-Type', regionMime)
+
+        if isinstance(regionData, pathlib.Path):
+            BUF_SIZE = 65536
+            def stream():
+                try:
+                    with regionData.open('rb') as f:
+                        while True:
+                            data = f.read(BUF_SIZE)
+                            if not data:
+                                break
+                            yield data
+                finally:
+                    regionData.unlink()
+            return stream
+        setRawResponse()
+        return regionData
     # @describeRoute(
     #     Description('Get a large image tile.')
     #     .param('itemId', 'The ID of the item.', paramType='path')

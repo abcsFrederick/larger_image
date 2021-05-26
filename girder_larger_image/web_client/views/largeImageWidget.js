@@ -68,7 +68,6 @@ var LargeImageWidget = View.extend({
     // FIXME: where does girder implement this?
     _setApiDefaults: function (description) {
         var parameters = description.paths['/item/{itemId}/tiles/extended'].post.parameters;
-        console.log(parameters)
         parameters.forEach((parameter) => {
             switch (parameter.name) {
                 case 'notify':

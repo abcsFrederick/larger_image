@@ -204,3 +204,4 @@ class LargerImageItem(ImageItem):
     #     tileData = tileSource.saveTile(x, y, z, data, mayRedirect=mayRedirect)
     #     tileMimeType = tileSource.getTileMimeType()
     #     return tileData, tileMimeType
+    
