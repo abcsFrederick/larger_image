@@ -24,4 +24,4 @@
 
 from .tiles import TilesItemResource
 
-__all__ = ('TilesItemResource',)
+__all__ = ('TilesItemResource')

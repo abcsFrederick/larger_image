@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import cherrypy
-import os 
-import urllib
 import pathlib
 
 from girder.api import access, filter_logging
@@ -18,7 +16,6 @@ from girder_large_image import loadmodelcache
 from girder_large_image.rest.tiles import ImageMimeTypes, \
     TilesItemResource, _adjustParams, _handleETag
 from large_image.exceptions import TileGeneralException
-from large_image.constants import TileInputUnits
 
 try:
     from girder_colormaps.models.colormap import Colormap
@@ -28,22 +25,22 @@ except ImportError:
 from ..models.larger_image_item import LargerImageItem
 
 
-MimeTypeExtensions = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/tiff': 'tiff',
-}
+from large_image.constants import TileInputUnits
+
+
 
 class TilesItemResource(TilesItemResource):
     def __init__(self, apiRoot):
         # Avoid redefining routes, call the Resource constructor
-        super(ItemResource, self).__init__()
-
+        # super(ItemResource, self).__init__()
+        super().__init__(apiRoot)
         apiRoot.item.route('POST', (':itemId', 'tiles', 'extended'),
                            self.createTiles)
         apiRoot.item.route('GET', (':itemId', 'tiles', 'extended', 'zxy', ':z', ':x', ':y'),
                            self.getTile)
-        apiRoot.item.route('GET', (':itemId', 'tiles', 'extended', 'region'),
+        # remove and replace original get region route
+        apiRoot.item.removeRoute('GET', (':itemId', 'tiles', 'region'))
+        apiRoot.item.route('GET', (':itemId', 'tiles', 'region'),
                            self.getTilesRegion)
         # apiRoot.item.route('POST', (':itemId', 'tiles', 'extended', 'zxy', ':z', ':x', ':y'),
         # self.saveTile)
@@ -52,38 +49,6 @@ class TilesItemResource(TilesItemResource):
             frequency=250)
         # Cache the model singleton
         self.imageItemModel = LargerImageItem()
-
-    def _setContentDisposition(self, item, contentDisposition, mime, subname, fullFilename=None):
-        """
-        If requested, set the content disposition and a suggested file name.
-        :param item: an item that includes a name.
-        :param contentDisposition: either 'inline' or 'attachment', otherwise
-            no header is added.
-        :param mime: the mimetype of the output image.  Used for the filename
-            suffix.
-        :param subname: a subname to append to the item name.
-        :param fullFilename: if specified, use this instead of the item name
-            and the subname.
-        """
-        if (not item or not item.get('name') or
-                mime not in MimeTypeExtensions or
-                contentDisposition not in ('inline', 'attachment')):
-            return
-        if fullFilename:
-            filename = fullFilename
-        else:
-            filename = os.path.splitext(item['name'])[0]
-            if subname:
-                filename += '-' + subname
-            filename += '.' + MimeTypeExtensions[mime]
-        if not isinstance(filename, str):
-            filename = filename.decode('utf8', 'ignore')
-        safeFilename = filename.encode('ascii', 'ignore').replace(b'"', b'')
-        encodedFilename = urllib.parse.quote(filename.encode('utf8', 'ignore'))
-        setResponseHeader(
-            'Content-Disposition',
-            '%s; filename="%s"; filename*=UTF-8\'\'%s' % (
-                contentDisposition, safeFilename, encodedFilename))
 
     @describeRoute(
         Description('Create a large image for this item.')
@@ -221,6 +186,72 @@ class TilesItemResource(TilesItemResource):
                                         code=500)
         return self._getTile(item, z, x, y, params, mayRedirect=redirect)
 
+    # @describeRoute(
+    #     Description('Get a large image tile.')
+    #     .param('itemId', 'The ID of the item.', paramType='path')
+    #     .param('z', 'The layer number of the tile (0 is the most zoomed-out '
+    #            'layer).', paramType='path')
+    #     .param('x', 'The X coordinate of the tile (0 is the left side).',
+    #            paramType='path')
+    #     .param('y', 'The Y coordinate of the tile (0 is the top).',
+    #            paramType='path')
+    #     .param('data', 'data need to be saved.',
+    #            paramType='path')
+    #     .param('redirect', 'If the tile exists as a complete file, allow an '
+    #            'HTTP redirect instead of returning the data directly.  The '
+    #            'redirect might not have the correct mime type.  "exact" must '
+    #            'match the image encoding and quality parameters, "encoding" '
+    #            'must match the image encoding but disregards quality, and '
+    #            '"any" will redirect to any image if possible.', required=False,
+    #            enum=['false', 'exact', 'encoding', 'any'], default='false')
+    #     .produces(ImageMimeTypes)
+    #     .errorResponse('ID was invalid.')
+    #     .errorResponse('Read access was denied for the item.', 403)
+    # )
+    # @access.public
+    # def saveTile(self, itemId, z, x, y, params):
+    #     _adjustParams(params)
+    #     item = loadmodelcache.loadModel(
+    #         self, 'item', id=itemId, allowCookie=True, level=AccessType.READ)
+    #     # Explicitly set a expires time to encourage browsers to cache this for
+    #     # a while.
+    #     setResponseHeader('Expires', cherrypy.lib.httputil.HTTPDate(
+    #         cherrypy.serving.response.time + 600))
+    #     redirect = params.get('redirect', False)
+    #     if redirect not in ('any', 'exact', 'encoding'):
+    #         redirect = False
+    #     data = []
+    #     return self._saveTile(item, z, x, y, data, params, mayRedirect=redirect)
+
+    # def _saveTile(self, item, z, x, y, data, imageArgs, mayRedirect=False):
+    #     """
+    #     Get an large image tile.
+
+    #     :param item: the item to get a tile from.
+    #     :param z: tile layer number (0 is the most zoomed-out).
+    #     .param x: the X coordinate of the tile (0 is the left side).
+    #     .param y: the Y coordinate of the tile (0 is the top).
+    #     :param imageArgs: additional arguments to use when fetching image data.
+    #     :param mayRedirect: if True or one of 'any', 'encoding', or 'exact',
+    #         allow return a response whcih may be a redirect.
+    #     :return: a function that returns the raw image data.
+    #     """
+    #     try:
+    #         x, y, z = int(x), int(y), int(z)
+    #     except ValueError:
+    #         raise RestException('x, y, and z must be integers', code=400)
+    #     if x < 0 or y < 0 or z < 0:
+    #         raise RestException('x, y, and z must be positive integers',
+    #                             code=400)
+    #     try:
+    #         tileData, tileMime = self.imageItemModel.saveTile(
+    #             item, x, y, z, data, mayRedirect=mayRedirect, **imageArgs)
+    #     except TileGeneralException as e:
+    #         raise RestException(e.args[0], code=404)
+    #     setResponseHeader('Content-Type', tileMime)
+    #     setRawResponse()
+    #     return tileData
+
     @describeRoute(
         Description('Get any region of a large image item, optionally scaling '
                     'it.')
@@ -312,6 +343,7 @@ class TilesItemResource(TilesItemResource):
     @access.public(cookie=True)
     @loadmodel(model='item', map={'itemId': 'item'}, level=AccessType.READ)
     def getTilesRegion(self, item, params):
+
         _adjustParams(params)
         params = self._parseParams(params, True, [
             ('left', float, 'region', 'left'),
@@ -348,7 +380,8 @@ class TilesItemResource(TilesItemResource):
             raise RestException(e.args[0])
         except ValueError as e:
             raise RestException('Value Error: %s' % e.args[0])
-        subname = str(params.get('region')['top']) + ',' + str(params.get('region')['left'])
+
+        subname = str(params.get('region')['left']) + ',' + str(params.get('region')['top'])
 
         self._setContentDisposition(
             item, params.get('contentDisposition'), regionMime, subname,
@@ -357,6 +390,7 @@ class TilesItemResource(TilesItemResource):
 
         if isinstance(regionData, pathlib.Path):
             BUF_SIZE = 65536
+
             def stream():
                 try:
                     with regionData.open('rb') as f:
@@ -370,68 +404,3 @@ class TilesItemResource(TilesItemResource):
             return stream
         setRawResponse()
         return regionData
-    # @describeRoute(
-    #     Description('Get a large image tile.')
-    #     .param('itemId', 'The ID of the item.', paramType='path')
-    #     .param('z', 'The layer number of the tile (0 is the most zoomed-out '
-    #            'layer).', paramType='path')
-    #     .param('x', 'The X coordinate of the tile (0 is the left side).',
-    #            paramType='path')
-    #     .param('y', 'The Y coordinate of the tile (0 is the top).',
-    #            paramType='path')
-    #     .param('data', 'data need to be saved.',
-    #            paramType='path')
-    #     .param('redirect', 'If the tile exists as a complete file, allow an '
-    #            'HTTP redirect instead of returning the data directly.  The '
-    #            'redirect might not have the correct mime type.  "exact" must '
-    #            'match the image encoding and quality parameters, "encoding" '
-    #            'must match the image encoding but disregards quality, and '
-    #            '"any" will redirect to any image if possible.', required=False,
-    #            enum=['false', 'exact', 'encoding', 'any'], default='false')
-    #     .produces(ImageMimeTypes)
-    #     .errorResponse('ID was invalid.')
-    #     .errorResponse('Read access was denied for the item.', 403)
-    # )
-    # @access.public
-    # def saveTile(self, itemId, z, x, y, params):
-    #     _adjustParams(params)
-    #     item = loadmodelcache.loadModel(
-    #         self, 'item', id=itemId, allowCookie=True, level=AccessType.READ)
-    #     # Explicitly set a expires time to encourage browsers to cache this for
-    #     # a while.
-    #     setResponseHeader('Expires', cherrypy.lib.httputil.HTTPDate(
-    #         cherrypy.serving.response.time + 600))
-    #     redirect = params.get('redirect', False)
-    #     if redirect not in ('any', 'exact', 'encoding'):
-    #         redirect = False
-    #     data = []
-    #     return self._saveTile(item, z, x, y, data, params, mayRedirect=redirect)
-
-    # def _saveTile(self, item, z, x, y, data, imageArgs, mayRedirect=False):
-    #     """
-    #     Get an large image tile.
-
-    #     :param item: the item to get a tile from.
-    #     :param z: tile layer number (0 is the most zoomed-out).
-    #     .param x: the X coordinate of the tile (0 is the left side).
-    #     .param y: the Y coordinate of the tile (0 is the top).
-    #     :param imageArgs: additional arguments to use when fetching image data.
-    #     :param mayRedirect: if True or one of 'any', 'encoding', or 'exact',
-    #         allow return a response whcih may be a redirect.
-    #     :return: a function that returns the raw image data.
-    #     """
-    #     try:
-    #         x, y, z = int(x), int(y), int(z)
-    #     except ValueError:
-    #         raise RestException('x, y, and z must be integers', code=400)
-    #     if x < 0 or y < 0 or z < 0:
-    #         raise RestException('x, y, and z must be positive integers',
-    #                             code=400)
-    #     try:
-    #         tileData, tileMime = self.imageItemModel.saveTile(
-    #             item, x, y, z, data, mayRedirect=mayRedirect, **imageArgs)
-    #     except TileGeneralException as e:
-    #         raise RestException(e.args[0], code=404)
-    #     setResponseHeader('Content-Type', tileMime)
-    #     setRawResponse()
-    #     return tileData
