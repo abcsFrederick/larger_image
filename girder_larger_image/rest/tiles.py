@@ -40,7 +40,7 @@ class TilesItemResource(TilesItemResource):
                            self.getTile)
         # remove and replace original get region route
         apiRoot.item.removeRoute('GET', (':itemId', 'tiles', 'region'))
-        apiRoot.item.route('GET', (':itemId', 'tiles', 'region'),
+        apiRoot.item.route('GET', (':itemId', 'tiles', 'extended', 'region'),
                            self.getTilesRegion)
         # apiRoot.item.route('POST', (':itemId', 'tiles', 'extended', 'zxy', ':z', ':x', ':y'),
         # self.saveTile)
