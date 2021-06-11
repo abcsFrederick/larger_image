@@ -4,7 +4,10 @@ with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 requirements = [
+    'girder-large-image',
     'large-image',
+    'large-image-converter',
+    'large-image-tasks',
     'large_image_source_tiff',
     'large_image_source_openslide'
 ]

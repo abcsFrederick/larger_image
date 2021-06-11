@@ -74,110 +74,136 @@ class LargerImageItem(ImageItem):
         self.save(item)
         return job
 
-    def _createLargeImageJob(self, item, fileObj, user, token, quality=90, tileSize=256,
-                             compression='JPEG'):
-        path = os.path.join(os.path.dirname(__file__), '..', 'create_tiff.py')
-        with open(path, 'r') as f:
-            script = f.read()
+    def _createLargeImageJob(self, item, fileObj, user, token, **kwargs):
+        import large_image_tasks.tasks
+        from girder_worker_utils.transforms.girder_io import GirderUploadToItem
+        from girder_worker_utils.transforms.contrib.girder_io import GirderFileIdAllowDirect
+        from girder_worker_utils.transforms.common import TemporaryDirectory
 
-        title = 'TIFF conversion: %s' % fileObj['name']
-        job = Job().createJob(
-            title=title, type='large_image_tiff', handler='worker_handler',
-            user=user)
-        jobToken = Job().createJobToken(job)
+        try:
+            localPath = File().getLocalFilePath(fileObj)
+        except (FilePathException, AttributeError):
+            localPath = None
+        job = large_image_tasks.tasks.create_tiff.apply_async(kwargs=dict(
+            girder_job_title='TIFF Conversion: %s' % fileObj['name'],
+            girder_job_other_fields={'meta': {
+                'creator': 'large_image',
+                'itemId': str(item['_id']),
+                'task': 'createImageItem',
+            }},
+            inputFile=GirderFileIdAllowDirect(str(fileObj['_id']), fileObj['name'], localPath),
+            inputName=fileObj['name'],
+            outputDir=TemporaryDirectory(),
+            girder_result_hooks=[
+                GirderUploadToItem(str(item['_id']), False),
+            ],
+            **kwargs,
+        ), countdown=int(kwargs['countdown']) if kwargs.get('countdown') else None)
+        return job.job
 
-        outputName = os.path.splitext(fileObj['name'])[0] + '.tiff'
-        if outputName == fileObj['name']:
-            outputName = (os.path.splitext(fileObj['name'])[0] + '.' +
-                          time.strftime('%Y%m%d-%H%M%S') + '.tiff')
+        
+        # path = os.path.join(os.path.dirname(__file__), '..', 'create_tiff.py')
+        # with open(path, 'r') as f:
+        #     script = f.read()
 
-        task = {
-            'mode': 'python',
-            'script': script,
-            'name': title,
-            'inputs': [{
-                'id': 'in_path',
-                'target': 'filepath',
-                'type': 'string',
-                'format': 'text'
-            }, {
-                'id': 'out_filename',
-                'type': 'string',
-                'format': 'text'
-            }, {
-                'id': 'tile_size',
-                'type': 'number',
-                'format': 'number'
-            }, {
-                'id': 'quality',
-                'type': 'number',
-                'format': 'number'
-            }, {
-                'id': 'compression',
-                'type': 'string',
-                'format': 'text'
-            }],
-            'outputs': [{
-                'id': 'out_path',
-                'target': 'filepath',
-                'type': 'string',
-                'format': 'text'
-            }]
-        }
+        # title = 'TIFF conversion: %s' % fileObj['name']
+        # job = Job().createJob(
+        #     title=title, type='large_image_tiff', handler='worker_handler',
+        #     user=user)
+        # jobToken = Job().createJobToken(job)
 
-        inputs = {
-            'in_path': workerUtils.girderInputSpec(
-                fileObj, resourceType='file', token=token),
-            'compression': {
-                'mode': 'inline',
-                'type': 'string',
-                'format': 'text',
-                'data': compression
-            },
-            'quality': {
-                'mode': 'inline',
-                'type': 'number',
-                'format': 'number',
-                'data': quality
-            },
-            'tile_size': {
-                'mode': 'inline',
-                'type': 'number',
-                'format': 'number',
-                'data': tileSize
-            },
-            'out_filename': {
-                'mode': 'inline',
-                'type': 'string',
-                'format': 'text',
-                'data': outputName
-            }
-        }
+        # outputName = os.path.splitext(fileObj['name'])[0] + '.tiff'
+        # if outputName == fileObj['name']:
+        #     outputName = (os.path.splitext(fileObj['name'])[0] + '.' +
+        #                   time.strftime('%Y%m%d-%H%M%S') + '.tiff')
 
-        outputs = {
-            'out_path': workerUtils.girderOutputSpec(
-                parent=item, token=token, parentType='item')
-        }
+        # task = {
+        #     'mode': 'python',
+        #     'script': script,
+        #     'name': title,
+        #     'inputs': [{
+        #         'id': 'in_path',
+        #         'target': 'filepath',
+        #         'type': 'string',
+        #         'format': 'text'
+        #     }, {
+        #         'id': 'out_filename',
+        #         'type': 'string',
+        #         'format': 'text'
+        #     }, {
+        #         'id': 'tile_size',
+        #         'type': 'number',
+        #         'format': 'number'
+        #     }, {
+        #         'id': 'quality',
+        #         'type': 'number',
+        #         'format': 'number'
+        #     }, {
+        #         'id': 'compression',
+        #         'type': 'string',
+        #         'format': 'text'
+        #     }],
+        #     'outputs': [{
+        #         'id': 'out_path',
+        #         'target': 'filepath',
+        #         'type': 'string',
+        #         'format': 'text'
+        #     }]
+        # }
 
-        # TODO: Give the job an owner
-        job['kwargs'] = {
-            'task': task,
-            'inputs': inputs,
-            'outputs': outputs,
-            'jobInfo': workerUtils.jobInfoSpec(job, jobToken),
-            'auto_convert': False,
-            'validate': False
-        }
-        job['meta'] = {
-            'creator': 'large_image',
-            'itemId': str(item['_id']),
-            'task': 'createImageItem',
-        }
+        # inputs = {
+        #     'in_path': workerUtils.girderInputSpec(
+        #         fileObj, resourceType='file', token=token),
+        #     'compression': {
+        #         'mode': 'inline',
+        #         'type': 'string',
+        #         'format': 'text',
+        #         'data': compression
+        #     },
+        #     'quality': {
+        #         'mode': 'inline',
+        #         'type': 'number',
+        #         'format': 'number',
+        #         'data': quality
+        #     },
+        #     'tile_size': {
+        #         'mode': 'inline',
+        #         'type': 'number',
+        #         'format': 'number',
+        #         'data': tileSize
+        #     },
+        #     'out_filename': {
+        #         'mode': 'inline',
+        #         'type': 'string',
+        #         'format': 'text',
+        #         'data': outputName
+        #     }
+        # }
 
-        job = Job().save(job)
-        Job().scheduleJob(job)
+        # outputs = {
+        #     'out_path': workerUtils.girderOutputSpec(
+        #         parent=item, token=token, parentType='item')
+        # }
 
-        return job
+        # # TODO: Give the job an owner
+        # job['kwargs'] = {
+        #     'task': task,
+        #     'inputs': inputs,
+        #     'outputs': outputs,
+        #     'jobInfo': workerUtils.jobInfoSpec(job, jobToken),
+        #     'auto_convert': False,
+        #     'validate': False
+        # }
+        # job['meta'] = {
+        #     'creator': 'large_image',
+        #     'itemId': str(item['_id']),
+        #     'task': 'createImageItem',
+        # }
+
+        # job = Job().save(job)
+        # Job().scheduleJob(job)
+
+        # return job
 
     @classmethod
     def _loadTileSource(cls, item, **kwargs):

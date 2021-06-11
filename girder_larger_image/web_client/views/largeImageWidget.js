@@ -17,14 +17,14 @@ var LargeImageWidget = View.extend({
             var data = {
                 fileId: this.file.id,
                 notify: this.$('#l-notify').is(':checked'),
-                compression: this.$('#l-compression').val(),
+                compression: this.$('#l-compression').val().toLowerCase(),
                 quality: this.$('#l-quality').val(),
                 tileSize: this.$('#l-tileSize').val()
             };
 
             restRequest({
                 type: 'POST',
-                url: 'item/' + this.item.id + '/tiles/extended',
+                url: 'item/' + this.item.id + '/tiles',
                 data: data,
                 error: function (error) {
                     if (error.status !== 0) {
