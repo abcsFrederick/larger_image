@@ -77,7 +77,6 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
         else:
             array = numpy.asarray(tile, dtype=numpy.float32)
             min_, max_ = range_
-
             if min_ == max_:
                 array[numpy.where(array != min_)] = 0
                 array[numpy.nonzero(array)] = 255
@@ -101,7 +100,12 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
         if label:
             # ouch
             mask = tile.point(lambda x: 0 if x == 0 else 255, '1')
-        palette = PIL.ImagePalette.ImagePalette(palette=colormap)
+        # colormap = bytes(bytearray([0, 0, 0, 248, 21, 21, 78, 253, 4, 11, 0, 255]))
+
+        palette = PIL.ImagePalette.ImagePalette(palette=colormap, size=len(colormap))
+
+        # palette = [0, 255, 15, 41, 0, 0, 255, 0, 0, 0, 0, 255]
+        # palette = bytearray(b'\x00\xff\x0f)\x00\x00\xff\x00\x00\x00\x00\xff')
         tile.putpalette(palette)
 
         if label:
@@ -135,6 +139,7 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
         return tile, tileEncoding
 
     def _outputTile(self, tile, tileEncoding, *args, **kwargs):
+        # print(tile)
         encoding = self.encoding
         # editing = kwargs.get('editing')
         # if editing is not None:

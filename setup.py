@@ -6,7 +6,7 @@ with open('README.rst') as readme_file:
 requirements = [
     'girder-large-image',
     'large-image',
-    'large-image-converter',
+    'large-image-converter[sources]',
     'large-image-tasks',
     'large_image_source_tiff',
     'large_image_source_openslide'
@@ -26,6 +26,9 @@ setup(
     ],
     description='Create, serve, and display large multiresolution images with extended datatypes.',
     install_requires=requirements,
+    dependency_links=[
+        'https://girder.github.io/large_image_wheels'
+    ],
     license='Apache Software License 2.0',
     long_description=readme,
     long_description_content_type='text/x-rst',

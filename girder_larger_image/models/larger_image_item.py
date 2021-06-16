@@ -214,7 +214,6 @@ class LargerImageItem(ImageItem):
                                       'still pending creation.')
 
         sourceName = item['largeImage']['sourceName']
-
         tileSource = AvailableTileSources[sourceName](item, **kwargs)
         return tileSource
 

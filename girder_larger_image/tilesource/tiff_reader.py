@@ -74,7 +74,8 @@ class TiledTiffDirectory(tiff_reader.TiledTiffDirectory):
     #         self._tiffFile, data, x, y).value
     def getTile(self, x, y):
         tile = super(TiledTiffDirectory, self).getTile(x, y)
-        if tile is not None:
+        
+        if isinstance(tile, bytes):
             return tile
 
         compression_types = (
@@ -82,6 +83,7 @@ class TiledTiffDirectory(tiff_reader.TiledTiffDirectory):
             libtiff_ctypes.COMPRESSION_ADOBE_DEFLATE,
             libtiff_ctypes.COMPRESSION_LZW
         )
+
         if self._tiffInfo.get('compression') in compression_types:
             tile_plane = self._tiffFile.read_one_tile(x*self._tileHeight,
                                                       y*self._tileWidth)
