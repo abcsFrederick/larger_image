@@ -20,7 +20,7 @@ var LargeImageWidget = View.extend({
                 compression: this.$('#l-compression').val().toLowerCase(),
                 quality: this.$('#l-quality').val(),
                 tileSize: this.$('#l-tileSize').val(),
-                force: true
+                force: this.$('#l-force').is(':checked')
             };
 
             restRequest({
