@@ -19,7 +19,8 @@ var LargeImageWidget = View.extend({
                 notify: this.$('#l-notify').is(':checked'),
                 compression: this.$('#l-compression').val().toLowerCase(),
                 quality: this.$('#l-quality').val(),
-                tileSize: this.$('#l-tileSize').val()
+                tileSize: this.$('#l-tileSize').val(),
+                force: true
             };
 
             restRequest({

@@ -164,6 +164,7 @@ class TilesItemResource(TilesItemResource):
             ('bit', int),
         ]
         params = self._parseParams(params, True, typeList)
+
         if 'exclude' in params:
             # TODO: error handling
             params['exclude'] = [int(s) for s in params['exclude'].split(',')]
