@@ -79,7 +79,7 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
             min_, max_ = range_
             if min_ == max_:
                 array[numpy.where(array != min_)] = 0
-                array[numpy.nonzero(array)] = 255
+                array[numpy.nonzero(array)] = min_
             else:
                 array[numpy.where(array > max_)] = 0
                 array[numpy.where(array < min_)] = 0
