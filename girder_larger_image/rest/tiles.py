@@ -382,7 +382,7 @@ class TilesItemResource(TilesItemResource):
         except ValueError as e:
             raise RestException('Value Error: %s' % e.args[0])
 
-        subname = str(params.get('region')['left']) + ',' + str(params.get('region')['top'])
+        subname = str(int(params.get('region')['left'])) + ',' + str(int(params.get('region')['top']))
 
         self._setContentDisposition(
             item, params.get('contentDisposition'), regionMime, subname,
