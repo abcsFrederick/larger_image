@@ -102,8 +102,8 @@ class TiffFileTileSource(tiff.TiffFileTileSource):
             mask = tile.point(lambda x: 0 if x == 0 else 255, '1')
         # colormap = bytes(bytearray([0, 0, 0, 248, 21, 21, 78, 253, 4, 11, 0, 255]))
 
-        palette = PIL.ImagePalette.ImagePalette(palette=colormap, size=len(colormap))
-
+        # palette = PIL.ImagePalette.ImagePalette(palette=colormap, size=len(colormap))
+        palette = PIL.ImagePalette.ImagePalette(palette=colormap)
         # palette = [0, 255, 15, 41, 0, 0, 255, 0, 0, 0, 0, 255]
         # palette = bytearray(b'\x00\xff\x0f)\x00\x00\xff\x00\x00\x00\x00\xff')
         tile.putpalette(palette)
